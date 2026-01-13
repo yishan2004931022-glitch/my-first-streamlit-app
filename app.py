@@ -4,7 +4,7 @@ import numpy as np
 st.set_page_config(page_title="My First Streamlit App", layout="centered")
 st.title("My First Streamlit App")
 st.write("This app is built with Streamlit!")
-st.write("Hello, Selina!")
+st.write("HelloBerlin!")
 # Display data
 st.header("A tiny dataset")
 df = pd.DataFrame({
@@ -19,3 +19,4 @@ st.line_chart(df.set_index("x"))
 st.header("Your first widget")
 number = st.slider("Pick a number", min_value=0, max_value=100, value=50)
 st.write("You picked:", number)
+
