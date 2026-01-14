@@ -6,9 +6,12 @@ st.title("My First Streamlit App")
 st.write("This app is built with Streamlit!")
 st.write("HAHAHAHA!")
 
-# reading the data
-link="https://drive.google.com/file/d/1zdxtFQSRAeG50Vx5Rpj5pzW47UB3UJ7C/view?usp=drive_link"
-df=pdf.read_csv(link)
+# Reading the data
+link = "https://drive.google.com/uc?export=download&id=1zdxtFQSRAeG50Vx5Rpj5pzW47UB3UJ7C"
+df = pd.read_csv(link)
+
+# Show first few rows
+print(df.head())
 
 # create a download data button for original dataset
 st.download_botton=("Download the data in csv format", df.to_csv(),
@@ -28,6 +31,7 @@ st.line_chart(df.set_index("x"))
 st.header("Your first widget")
 number = st.slider("Pick a number", min_value=0, max_value=100, value=50)
 st.write("You picked:", number)
+
 
 
 
