@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-st.set_page_config(page_title="My First Streamlit App", layout="centered", page_icon="Seeding")
+st.set_page_config(page_title="My First Streamlit App", layout="centered", page_icon="⭐⭐⭐")
 st.title("My First Streamlit App")
 st.write("This app is built with Streamlit!")
 st.write("Hello!")
@@ -19,6 +19,7 @@ st.line_chart(df.set_index("x"))
 st.header("Your first widget")
 number = st.slider("Pick a number", min_value=0, max_value=100, value=50)
 st.write("You picked:", number)
+
 
 
 
