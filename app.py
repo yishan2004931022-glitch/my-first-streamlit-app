@@ -12,7 +12,7 @@ df=pdf.read_csv(link)
 
 # create a download data button for original dataset
 st.download_botton=("Download the data in csv format", df.to_csv(),
-                   file_name="myproject_finaldataset.csv")
+                   file_name == "myproject_finaldatabase.csv")
 
 # Display data
 st.header("A tiny dataset")
@@ -28,6 +28,7 @@ st.line_chart(df.set_index("x"))
 st.header("Your first widget")
 number = st.slider("Pick a number", min_value=0, max_value=100, value=50)
 st.write("You picked:", number)
+
 
 
 
