@@ -25,7 +25,7 @@ st.download_button(
 )
 
 # Display data
-st.header("A tiny dataset")
+st.header("A preview dataset")
 df = pd.DataFrame({
 "x": np.arange(1, 11),
 "y": np.random.randint(10, 100, size=10)
@@ -38,6 +38,7 @@ st.line_chart(df.set_index("x"))
 st.header("Your first widget")
 number = st.slider("Pick a number", min_value=0, max_value=100, value=50)
 st.write("You picked:", number)
+
 
 
 
