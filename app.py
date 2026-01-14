@@ -5,6 +5,15 @@ st.set_page_config(page_title="My First Streamlit App", layout="centered")
 st.title("My First Streamlit App")
 st.write("This app is built with Streamlit!")
 st.write("HAHAHAHA!")
+
+# reading the data
+link=""
+df=pdf.read_csv(link)
+
+# create a download data button for original dataset
+st.download_botton=('Download the data in csv format', df.tp_csv(),
+                   file_name='myproject_finaldataset.csv')
+
 # Display data
 st.header("A tiny dataset")
 df = pd.DataFrame({
@@ -19,6 +28,7 @@ st.line_chart(df.set_index("x"))
 st.header("Your first widget")
 number = st.slider("Pick a number", min_value=0, max_value=100, value=50)
 st.write("You picked:", number)
+
 
 
 
