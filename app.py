@@ -219,4 +219,3 @@ with tab3:
     fig10 = apply_original_style(fig10, "Average Popularity by Market")
     fig10.update_layout(geo=dict(showframe=False, projection_type='natural earth'))
     st.plotly_chart(fig10, use_container_width=True)
-
