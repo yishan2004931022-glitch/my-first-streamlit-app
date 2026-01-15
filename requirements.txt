@@ -3,3 +3,4 @@ pandas
 plotly
 numpy
 pyarrow
+statsmodels  <-- 記得要有這行！
