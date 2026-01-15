@@ -20,8 +20,8 @@ SPOTIFY_LIGHT_BG = "#FFFFFF"
 @st.cache_data
 def load_and_clean_data():
     try:
-        # ✅ 加上 try: 並且這一行要縮排 (往右縮一格)
-        df = pd.read_csv('Final database.zip', compression='zip', low_memory=False)
+        # ✅ 改用這行：讀取 .gz 檔 (注意 compression 改成 gzip)
+        df = pd.read_csv('Final database.csv.gz', compression='gzip', low_memory=False)
     except FileNotFoundError:
         return None
 
@@ -122,6 +122,7 @@ st.plotly_chart(fig1, use_container_width=True)
 # (選用) 顯示數據統計摘要
 with st.expander("📊 View Detailed Statistics"):
     st.dataframe(means.style.format({"Popularity": "{:.2f}"}))
+
 
 
 
