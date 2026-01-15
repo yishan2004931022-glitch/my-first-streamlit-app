@@ -21,7 +21,7 @@ SPOTIFY_LIGHT_BG = "#FFFFFF"
 def load_and_clean_data():
     # 讀取 CSV (請確保檔案在同一目錄)
     try:
-        df = pd.read_csv('Final database.csv', low_memory=False)
+        df = pd.read_csv('Final database.zip', low_memory=False)
     except FileNotFoundError:
         return None
 
@@ -122,3 +122,4 @@ st.plotly_chart(fig1, use_container_width=True)
 # (選用) 顯示數據統計摘要
 with st.expander("📊 View Detailed Statistics"):
     st.dataframe(means.style.format({"Popularity": "{:.2f}"}))
+
