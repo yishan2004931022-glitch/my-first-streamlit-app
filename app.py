@@ -19,9 +19,9 @@ SPOTIFY_LIGHT_BG = "#FFFFFF"
 # --- 3. 資料讀取與清洗函數 (使用 Cache 加速) ---
 @st.cache_data
 def load_and_clean_data():
-    # ✅ 修改這裡：檔名要跟 GitHub 上的一模一樣 (.zip)
-    # Pandas 會自動解壓縮，不需要額外設定
-    df = pd.read_csv('Final database.zip', compression='zip', low_memory=False) 
+    try:
+        # ✅ 加上 try: 並且這一行要縮排 (往右縮一格)
+        df = pd.read_csv('Final database.zip', compression='zip', low_memory=False)
     except FileNotFoundError:
         return None
 
@@ -122,6 +122,7 @@ st.plotly_chart(fig1, use_container_width=True)
 # (選用) 顯示數據統計摘要
 with st.expander("📊 View Detailed Statistics"):
     st.dataframe(means.style.format({"Popularity": "{:.2f}"}))
+
 
 
 
