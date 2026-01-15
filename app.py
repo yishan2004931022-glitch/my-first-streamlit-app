@@ -16,12 +16,14 @@ st.set_page_config(
 SPOTIFY_GREEN = "#1DB954"
 SPOTIFY_BLACK = "#191414"
 
-# ✨ 黑色大章節標題 (1. 2. 3...)
+# ✨ 帶有左側綠色裝飾條的大標題 (章節用)
 def section_header(text):
     st.markdown(f"""
-        <h2 style='color: #333333; font-size: 34px; font-weight: 800; margin-top: 45px; margin-bottom: 5px; font-family: "Arial Black";'>
-        {text}
-        </h2>
+        <div style='border-left: 8px solid {SPOTIFY_GREEN}; padding-left: 20px; margin-top: 50px; margin-bottom: 10px;'>
+            <h2 style='color: #333333; font-size: 34px; font-weight: 800; font-family: "Arial Black"; margin: 0;'>
+            {text}
+            </h2>
+        </div>
         """, unsafe_allow_html=True)
 
 # ✨ 綠色圖表小副標題樣式 (位於圖表左上角)
@@ -30,23 +32,22 @@ def apply_chart_style(fig, title_text):
         template="simple_white",
         title=dict(
             text=f"<b>{title_text}</b>",
-            font=dict(color=SPOTIFY_GREEN, size=22, family="Arial Black"),
-            x=0, y=0.98  # 固定在左上角
+            font=dict(color=SPOTIFY_GREEN, size=24, family="Arial Black"),
+            x=0, y=0.98
         ),
-        font=dict(family="Arial", size=13, color="black"),
+        font=dict(family="Arial", size=14, color="black"),
         margin=dict(t=100, b=50, l=50, r=50),
-        bargap=0.1 # 柱狀圖間隙
+        bargap=0.1
     )
-    # 座標軸加深
-    fig.update_xaxes(tickfont=dict(color="black", size=12), title_font=dict(color="black", size=14))
-    fig.update_yaxes(tickfont=dict(color="black", size=12), title_font=dict(color="black", size=14))
+    # 座標軸加深且加粗
+    fig.update_xaxes(tickfont=dict(color="black", size=12), title_font=dict(color="black", size=15, family="Arial Black"))
+    fig.update_yaxes(tickfont=dict(color="black", size=12), title_font=dict(color="black", size=15, family="Arial Black"))
     return fig
 
 # --- 3. 資料讀取與強力清洗 ---
 @st.cache_data
 def load_data():
     try:
-        # 優先讀取壓縮檔
         df = pd.read_csv('Final database.csv.gz', compression='gzip', low_memory=False)
     except:
         try:
@@ -89,42 +90,38 @@ def load_data():
 df = load_data()
 
 if df is None:
-    st.error("❌ 無法載入資料檔，請確認 GitHub 目錄中包含資料檔案。")
+    st.error("❌ 找不到資料檔！請確認 GitHub 有 Final database.csv.gz")
     st.stop()
 
 # --- 4. 側邊欄控制 ---
 with st.sidebar:
-    st.title("🎧 Settings")
+    st.title("🎧 Analytics Settings")
     min_year, max_year = int(df['Year'].min()), int(df['Year'].max())
     year_range = st.slider("📅 Year Range", min_year, max_year, (2010, 2024))
-    
-    # 資料過濾
     df_filtered = df[(df['Year'] >= year_range[0]) & (df['Year'] <= year_range[1])]
-    
     top_n = st.slider("🏆 Top Genres Count", 3, 15, 5)
     st.markdown("---")
     st.info(f"Analyzing {len(df_filtered):,} tracks")
 
 # --- 5. 主頁面內容 ---
 st.title("🎵 Spotify Producer Dashboard")
-st.markdown(f"### 📊 Analysis Period: {year_range[0]} - {year_range[1]}")
+st.markdown(f"### 📊 Dashboard Context: {year_range[0]} - {year_range[1]}")
 
-# 建立分頁
 tab1, tab2, tab3 = st.tabs(["📈 Market Strategy", "🎛️ Audio Lab", "🌍 Global Map"])
 
 # === TAB 1: 市場策略 (1-5 題) ===
 with tab1:
-    # Q4. 市場趨勢
+    # 1. 市場趨勢
     section_header("1. Market Trend Evolution")
     yearly = df_filtered.groupby('Year')['Popularity'].mean().reset_index()
-    fig1 = px.line(yearly, x='Year', y='Popularity', markers=True, height=500)
-    fig1.update_traces(line=dict(color=SPOTIFY_BLACK, width=3), marker=dict(size=8, color=SPOTIFY_GREEN))
-    fig1 = apply_chart_style(fig1, "Yearly Average Popularity Trend")
+    fig1 = px.line(yearly, x='Year', y='Popularity', markers=True, height=550)
+    fig1.update_traces(line=dict(color=SPOTIFY_BLACK, width=4), marker=dict(size=10, color=SPOTIFY_GREEN, line=dict(width=2, color="white")))
+    fig1 = apply_chart_style(fig1, "Yearly Average Popularity Evolution")
     st.plotly_chart(fig1, use_container_width=True)
 
     st.markdown("---")
 
-    # Q1. 發行策略
+    # 2. 發行策略
     section_header("2. Single vs. Album Strategy")
     top_genres_list = df_filtered['Genre'].value_counts().head(top_n).index
     df_strat = df_filtered[df_filtered['Genre'].isin(top_genres_list)]
@@ -133,63 +130,59 @@ with tab1:
                  color_discrete_map={'single': SPOTIFY_GREEN, 'album': "#B3B3B3"},
                  category_orders={'Album/Single': ['single', 'album']})
     fig2.for_each_annotation(lambda a: a.update(text=f"<b>{a.text.split('=')[-1]}</b>", font=dict(size=14)))
-    fig2 = apply_chart_style(fig2, f"Popularity by Format (Top {top_n} Genres)")
+    fig2 = apply_chart_style(fig2, f"Format Performance: Top {top_n} Genres")
     fig2.update_layout(showlegend=False)
     st.plotly_chart(fig2, use_container_width=True)
 
     st.markdown("---")
 
-    # Q2. 歌詞分級 (Explicit)
-    section_header("3. Content Strategy (Explicit)")
+    # 3. 內容分級 (Explicit)
+    section_header("3. Content Strategy Analysis")
     df_exp = df_filtered[df_filtered['Genre'].isin(top_genres_list)]
     avg_exp = df_exp.groupby(['Genre', 'Explicit_Label'])['Popularity'].mean().reset_index()
     fig3 = px.bar(avg_exp, x='Genre', y='Popularity', color='Explicit_Label', barmode='group',
                  color_discrete_map={'Explicit 🔞': SPOTIFY_BLACK, 'Clean 🟢': SPOTIFY_GREEN}, height=550)
-    fig3 = apply_chart_style(fig3, "The Impact of Explicit Content on Popularity")
+    fig3 = apply_chart_style(fig3, "Popularity Comparison: Explicit vs. Clean")
     fig3.update_layout(legend_title_text="")
     st.plotly_chart(fig3, use_container_width=True)
 
     st.markdown("---")
 
-    # Q8. 巨星效應
+    # 4. 巨星效應
     section_header("4. The Superstar Effect")
     art_stats = df_filtered.groupby('Artist').agg({'Artist_followers': 'mean', 'Popularity': 'max', 'Title': 'count'}).reset_index()
     art_stats = art_stats[art_stats['Title'] > 2]
     if len(art_stats) > 1:
         corr_val = art_stats['Artist_followers'].corr(art_stats['Popularity'])
-        # 相關係數指標卡片
         st.metric(label="📊 Followers vs. Peak Popularity Correlation", value=f"{corr_val:.2f}")
-        
         fig4 = px.scatter(art_stats, x='Artist_followers', y='Popularity', hover_name='Artist', 
-                         log_x=True, trendline="ols", trendline_color_override=SPOTIFY_BLACK, height=600)
+                         log_x=True, trendline="ols", trendline_color_override=SPOTIFY_BLACK, height=650)
         fig4.update_traces(marker=dict(size=8, color=SPOTIFY_GREEN, line=dict(width=1, color="black")), opacity=0.6)
-        fig4 = apply_chart_style(fig4, "Do More Followers Mean Higher Chart Peaks?")
+        fig4 = apply_chart_style(fig4, "Artist Following vs. Global Chart Peaks")
         st.plotly_chart(fig4, use_container_width=True)
 
     st.markdown("---")
 
-    # Q9. 黑馬雷達
+    # 5. 黑馬雷達
     section_header("5. Talent Scouting: Dark Horse Radar")
     dark = df_filtered[(df_filtered['Artist_followers'] < 50000) & (df_filtered['Popularity'] > 75)].copy()
     if not dark.empty:
         fig5 = px.scatter(dark, x='energy', y='danceability', size='Popularity', color='Popularity',
                          hover_name='Title', hover_data=['Artist'],
                          color_continuous_scale=['#F0FFF0', SPOTIFY_GREEN], height=750)
-        # 加入象限線
+        # 加入象限標註
         fig5.add_vline(x=0.5, line_dash="dash", line_color="grey")
         fig5.add_hline(y=0.5, line_dash="dash", line_color="grey")
-        # 標註象限
         fig5.add_annotation(x=0.9, y=0.9, text="<b>🔥 CLUB</b>", showarrow=False, font=dict(size=16))
         fig5.add_annotation(x=0.1, y=0.9, text="<b>🍷 GROOVE</b>", showarrow=False, font=dict(size=16))
         fig5.add_annotation(x=0.9, y=0.1, text="<b>⚡ POWER</b>", showarrow=False, font=dict(size=16))
         fig5.add_annotation(x=0.1, y=0.1, text="<b>🌙 BALLAD</b>", showarrow=False, font=dict(size=16))
-        
-        fig5 = apply_chart_style(fig5, "Emerging Artists: High Streams with Low Following")
+        fig5 = apply_chart_style(fig5, "High-Impact Tracks from Emerging Artists")
         st.plotly_chart(fig5, use_container_width=True)
 
 # === TAB 2: 音樂實驗室 (6-9 題) ===
 with tab2:
-    # Q5. 節奏分析 (BPM) - Jupyter 紮實版
+    # 6. BPM 直方圖 (紮實 Jupyter 風格)
     section_header("6. Tempo Analysis (BPM)")
     def classify_tempo(bpm):
         if bpm < 100: return 'Slow (<100)'
@@ -202,26 +195,26 @@ with tab2:
                        category_orders={'Tempo_Zone': ['Slow (<100)', 'Mainstream (100-140)', 'Fast (>140)']},
                        text_auto='.2s', height=600)
     
-    # 🔥 關鍵：讓柱子變粗 (xbins size=5)
+    # 🔥 關鍵：讓 Bar 變厚實 (xbins size=5)
     fig6.update_traces(xbins=dict(start=0, end=250, size=5), textposition='outside', marker_line_width=1, marker_line_color="white")
     fig6 = apply_chart_style(fig6, "Tempo Zones: The Dominance of Mainstream")
-    fig6.add_vline(x=120, line_width=3, line_dash="dash", line_color=SPOTIFY_BLACK, annotation_text="120 BPM")
+    fig6.add_vline(x=120, line_width=3, line_dash="dash", line_color=SPOTIFY_BLACK, annotation_text="120 BPM Standard")
     st.plotly_chart(fig6, use_container_width=True)
 
     st.markdown("---")
 
-    # Q7. 歌曲長度趨勢
+    # 7. 歌曲長度趨勢
     section_header("7. Duration Trends")
     dur_trend = df_filtered.groupby('Year')['duration_min'].mean().reset_index()
     fig7 = px.line(dur_trend, x='Year', y='duration_min', markers=True, height=500)
     fig7.update_traces(line_color=SPOTIFY_BLACK, marker=dict(color=SPOTIFY_GREEN, size=8))
-    fig7 = apply_chart_style(fig7, "Are Songs Getting Shorter? (The Streaming Effect)")
+    fig7 = apply_chart_style(fig7, "The Streaming Effect: Average Track Duration")
     fig7.update_layout(yaxis_title="Minutes")
     st.plotly_chart(fig7, use_container_width=True)
 
     st.markdown("---")
 
-    # Q10. 決策矩陣 (相關性)
+    # 8. 相關性矩陣
     section_header("8. Audio Feature Correlation Matrix")
     corr_cols = ['Popularity', 'danceability', 'energy', 'valence', 'tempo', 'loudness']
     corr_mat = df_filtered[corr_cols].corr()
@@ -232,13 +225,13 @@ with tab2:
 
     st.markdown("---")
 
-    # Q3. 能量分布散佈圖
+    # 9. 能量分布
     section_header("9. Feature Lab: Energy vs. Danceability")
     df_sample = df_filtered.sample(n=min(2000, len(df_filtered)), random_state=42)
     fig9 = px.scatter(df_sample, x='energy', y='danceability', color='Popularity',
                      color_continuous_scale=['#F0F0F0', SPOTIFY_GREEN], opacity=0.6, height=700)
     fig9.update_traces(marker=dict(size=9, line=dict(width=1, color='DarkSlateGrey')))
-    fig9 = apply_chart_style(fig9, "Sample Distribution: Feature Analysis")
+    fig9 = apply_chart_style(fig9, "Distribution Analysis: Energy vs. Danceability")
     st.plotly_chart(fig9, use_container_width=True)
 
 # === TAB 3: 全球版圖 (10 題) ===
@@ -247,6 +240,6 @@ with tab3:
     geo_data = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
     fig10 = px.choropleth(geo_data, locations="Country", locationmode='country names', color="Popularity",
                          color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106b31'], height=800)
-    fig10 = apply_chart_style(fig10, "Average Popularity by Market")
+    fig10 = apply_chart_style(fig10, "Average Track Performance by Territory")
     fig10.update_layout(geo=dict(showframe=False, projection_type='natural earth'))
     st.plotly_chart(fig10, use_container_width=True)
