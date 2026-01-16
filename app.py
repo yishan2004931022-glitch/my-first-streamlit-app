@@ -210,42 +210,41 @@ if df is not None:
 
     # === TAB 2: Audio Lab & AI ===
     with tab2:
-        # 6. Audio Distribution 
-        section_header("6. Audio Feature Strategy: Energy vs. Danceability")
+        # --- Q6: Audio Feature Strategy ---
+        section_header("Audio Feature Strategy: Energy vs. Danceability")
         
-        # --- 1. 策略洞察 (Strategic Insight) ---
-        st.markdown("""
-        ### 💡 The "Hit Formula" Insight
-        This chart reveals the **'Sweet Spot'** for commercial success. Tracks that balance **High Energy** (> 0.6) with **High Danceability** (> 0.6) tend to cluster in the higher popularity brackets (darker green points). This is a key indicator for producers aiming for playlist placement.
-        ---
-        """)
-        
-        # --- 2. 數據抽樣 ---
-        # 為了避免圖表過於擁擠，我們隨機抽取 2000 筆資料進行展示
+        # 數據抽樣 (避免圖表點位過多導致載入緩慢)
         df_sample = df_filtered.sample(n=min(2000, len(df_filtered)), random_state=42)
         
-        # --- 3. 繪圖邏輯 (Spotify 風格) ---
+        # ✨ 優化排版：單行指標 + 16px 精簡 Insight
+        f_m1, f_m2 = st.columns([0.6, 4])
+        f_m1.metric("Sample Size", f"{len(df_sample)}")
+        f_m2.markdown(f"""
+            <div style='padding-top:28px; white-space: nowrap; color: #535353; font-size: 16px;'>
+                💡 <b>Hit Formula:</b> Tracks balancing High Energy & Danceability (>0.6) cluster in top brackets.
+            </div>
+            """, unsafe_allow_html=True)
+
+        # 繪圖邏輯
         fig_scatter = px.scatter(df_sample, 
                                  x='energy', 
                                  y='danceability', 
                                  color='Popularity', 
-                                 # 使用從淺灰到 Spotify 綠的漸層，與其他圖表一致
                                  color_continuous_scale=['#F0F0F0', SPOTIFY_GREEN], 
                                  opacity=0.6, 
                                  height=700)
-        
-        # 設定標記樣式 (Spotify 綠色填充 + 白色邊框)
-        fig_scatter.update_traces(marker=dict(size=8, line=dict(width=1, color='white')))
-        
-        # --- 4. 佈局優化 ---
+
+        # 設定 Spotify 綠色標記與白色邊框
+        fig_scatter.update_traces(marker=dict(size=9, line=dict(width=1, color='white')))
+
+        # 座標軸優化
         fig_scatter.update_layout(
             xaxis_title="Energy Score",
             yaxis_title="Danceability Score",
-            coloraxis_colorbar_title="Popularity Score"
+            coloraxis_colorbar_title="Popularity"
         )
-        
-        # 使用自定義的 apply_chart_style 函數保持風格統一
-        st.plotly_chart(apply_chart_style(fig_scatter, "Feature Distribution: The 'Sweet Spot' Analysis"), width='stretch')
+
+        st.plotly_chart(apply_chart_style(fig_scatter, "The 'Sweet Spot' Distribution"), width='stretch')
 
         # 7. Hit Song DNA
         section_header("Hit Song DNA: The Sweet Spot")
@@ -287,6 +286,7 @@ if df is not None:
         fig10 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106B31'], height=800)
         fig10.update_layout(geo=dict(showframe=False, projection_type='natural earth'))
         st.plotly_chart(apply_chart_style(fig10, "Global Popularity Map"), width='stretch')
+
 
 
 
