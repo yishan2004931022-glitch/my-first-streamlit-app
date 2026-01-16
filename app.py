@@ -151,20 +151,79 @@ if df is not None:
 
         # 5. Dark Horse Radar
         section_header("5. Talent Scouting: Dark Horse Radar")
-        st.markdown("### 🕵️ **Dark Horse Definition**: Followers < 50k & Popularity > 75")
-        dark = df_f[(df_f['Artist_followers'] < 50000) & (df_f['Popularity'] > 75)].copy()
-        if not dark.empty:
-            fig5 = px.scatter(dark, x='energy', y='danceability', size='Popularity', color='Popularity', 
-                             hover_name='Title', hover_data=['Artist'], color_continuous_scale=['#A0E0A0', SPOTIFY_GREEN], height=750)
-            fig5.add_vline(x=0.5, line_dash="dash", line_color="grey")
-            fig5.add_hline(y=0.5, line_dash="dash", line_color="grey")
-            fig5.add_annotation(x=0.9, y=0.9, text="<b>🔥 Club</b>", showarrow=False, font=dict(size=14))
-            fig5.add_annotation(x=0.1, y=0.1, text="<b>🌙 Ballad</b>", showarrow=False, font=dict(size=14))
-            top_h = dark.nlargest(3, 'Popularity')
-            for i, row in top_h.iterrows():
-                fig5.add_annotation(x=row['energy'], y=row['danceability'], text=f"<b>{row['Title'][:15]}</b>", 
-                                   showarrow=True, arrowhead=1, ax=0, ay=-40, font=dict(size=11), bgcolor="rgba(255,255,255,0.7)")
-            st.plotly_chart(apply_chart_style(fig5, "Dark Horse Quadrant Analysis"), width='stretch')
+        
+        # --- 1. Strategic Definitions (English) ---
+        st.markdown("""
+        ### 🕵️ What is a "Dark Horse" Artist?
+        We identify tracks with **'Low Cost, High Impact'** potential using two key metrics:
+        * **Micro-Influencer (Low Followers)**: Artists with **< 50,000** followers (emerging talent or independent artists).
+        * **Global Hit (High Popularity)**: Popularity score **> 75** (already making a significant impact on global Spotify charts).
+        ---
+        """)
+        
+        # --- 2. Data Processing ---
+        # Use filtered data and ensure no dirty data
+        dark_horses = df_filtered[(df_filtered['Artist_followers'] < 50000) & 
+                                  (df_filtered['Popularity'] > 75)].copy()
+        
+        if not dark_horses.empty:
+            # Quadrant Strategy Explanations
+            col_info1, col_info2 = st.columns(2)
+            with col_info1:
+                st.info("**🔥 Club (Top-Right)**: High energy & high danceability. Perfect for dance floors and parties.")
+                st.info("**🍷 Groove (Top-Left)**: Low energy but high danceability. Ideal for chill-out or cafe vibes.")
+            with col_info2:
+                st.info("**⚡ Power (Bottom-Right)**: High energy but low danceability. Typical for Rock or high-intensity tracks.")
+                st.info("**🌙 Ballad (Bottom-Left)**: Low energy and low danceability. Emotional and slow tracks.")
+        
+            # --- 3. Plotting Logic ---
+            fig9 = px.scatter(dark_horses, 
+                             x='energy', 
+                             y='danceability', 
+                             size='Popularity',      
+                             color='Popularity',     
+                             hover_name='Title',     
+                             hover_data=['Artist', 'Artist_followers'],
+                             color_continuous_scale=['#A0E0A0', SPOTIFY_GREEN], 
+                             size_max=20, 
+                             height=700)
+        
+            # --- 4. Strategic Quadrants ---
+            fig9.add_vline(x=0.5, line_width=1, line_dash="dash", line_color="grey")
+            fig9.add_hline(y=0.5, line_width=1, line_dash="dash", line_color="grey")
+        
+            # Labels for the quadrants
+            fig9.add_annotation(x=0.9, y=0.9, text="<b>🔥 Club</b>", showarrow=False, font=dict(color="black", size=14))
+            fig9.add_annotation(x=0.1, y=0.9, text="<b>🍷 Groove</b>", showarrow=False, font=dict(color="black", size=14))
+            fig9.add_annotation(x=0.9, y=0.1, text="<b>⚡ Power</b>", showarrow=False, font=dict(color="black", size=14))
+            fig9.add_annotation(x=0.1, y=0.1, text="<b>🌙 Ballad</b>", showarrow=False, font=dict(color="black", size=14))
+        
+            # --- 5. Top 3 Dark Horse Highlights ---
+            top_horses = dark_horses.nlargest(3, 'Popularity')
+            for i, row in top_horses.iterrows():
+                fig9.add_annotation(
+                    x=row['energy'], y=row['danceability'],
+                    text=f"<b>TOP: {row['Title'][:15]}</b>",
+                    showarrow=True, arrowhead=2, ax=0, ay=-40,
+                    font=dict(color=SPOTIFY_BLACK, size=12, family="Arial Black"),
+                    bgcolor="rgba(255,255,255,0.8)",
+                    bordercolor=SPOTIFY_GREEN,
+                    borderwidth=1
+                )
+        
+            # Layout Optimization
+            fig9.update_xaxes(range=[-0.05, 1.05], title="Energy")
+            fig9.update_yaxes(range=[-0.05, 1.05], title="Danceability")
+            
+            st.plotly_chart(apply_chart_style(fig9, "Dark Horse Radar: Quadrant Strategy"), width='stretch')
+            
+            # Detailed Data Table
+            with st.expander("📄 View Detailed Dark Horse Artist List"):
+                st.dataframe(dark_horses[['Artist', 'Title', 'Popularity', 'Artist_followers', 'Genre']]
+                             .sort_values(by='Popularity', ascending=False), width='stretch')
+        
+        else:
+            st.warning("⚠️ No tracks matching the 'Dark Horse' definition found in the current selection. Try adjusting the Year Range.")
 
     # === TAB 2: Audio Lab & AI ===
     with tab2:
@@ -220,3 +279,4 @@ if df is not None:
         fig11 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106B31'], height=800)
         fig11.update_layout(geo=dict(showframe=False, projection_type='natural earth'))
         st.plotly_chart(apply_chart_style(fig11, "Global Market Popularity Heatmap"), width='stretch')
+
