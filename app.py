@@ -20,193 +20,193 @@ SPOTIFY_LIGHT_GREY = "#B3B3B3"
 SPOTIFY_DARK_GREY = "#535353"
 TRENDLINE_RED = "#FF4B4B"
 
-# UI Helper: Section Headers
+# UI Helper: Section Headers with Green Sidebar
 def section_header(text):
     st.markdown(f"""
-        <div style='border-left: 8px solid {SPOTIFY_GREEN}; padding-left: 15px; margin-top: 40px; margin-bottom: 20px;'>
-            <h2 style='color: #333333; font-size: 28px; font-weight: 800; font-family: "Arial Black"; margin: 0;'>
+        <div style='border-left: 10px solid {SPOTIFY_GREEN}; padding-left: 20px; margin-top: 50px; margin-bottom: 10px;'>
+            <h2 style='color: #333333; font-size: 34px; font-weight: 800; font-family: "Arial Black"; margin: 0;'>
             {text}
             </h2>
         </div>
         """, unsafe_allow_html=True)
 
-# UI Helper: Plotly Styling Wrapper
-def apply_chart_style(fig):
+# UI Helper: Standard Plotly Styling
+def apply_chart_style(fig, title_text):
     fig.update_layout(
         template="simple_white",
-        font=dict(family="Arial", size=12),
-        margin=dict(t=50, b=50, l=20, r=20),
-        hoverlabel=dict(bgcolor="white", font_size=13)
+        title=dict(
+            text=f"<b>{title_text}</b>",
+            font=dict(color=SPOTIFY_GREEN, size=24, family="Arial Black"),
+            x=0, y=0.98
+        ),
+        font=dict(family="Arial", size=14, color="black"),
+        margin=dict(t=120, b=50, l=50, r=50)
     )
     return fig
 
-# --- 3. Data Engine (Optimized Cleaning) ---
+# --- 3. Data Engine (Full Cleaning Step A-E) ---
 @st.cache_data
 def load_data():
-    files = os.listdir('.')
-    target = 'Final database.csv.gz' if 'Final database.csv.gz' in files else 'Final database.zip'
+    all_files = os.listdir('.')
+    target = 'Final database.csv.gz' if 'Final database.csv.gz' in all_files else 'Final database.zip'
+    if target not in all_files:
+        st.error("❌ Data file missing.")
+        return None
     try:
         df = pd.read_csv(target, low_memory=False)
-        # Step A: Data Sanitization (Popularity 0-100 only)
+        # [Step A] Remove dirty data (0-100 only)
         df = df[(df['Popularity'] >= 0) & (df['Popularity'] <= 100)].copy()
-        # Step B: Filter Logic (Standard Release Types)
+        # [Step B] Filter Album/Single
         df = df[df['Album/Single'].isin(['single', 'album'])]
-        # Step C: Clean Genres
+        # [Step C] Exclude junk genres
         mask_junk = df['Genre'].astype(str).str.lower().isin(['n-a', 'unknown', 'world-music', 'nan'])
         df = df[~mask_junk]
+        # [Step D] Capitalize Genres (e.g., Pop, Hip-Hop)
         df['Genre'] = df['Genre'].astype(str).str.title().replace({'K-Pop': 'K-Pop'})
-        # Step D: Type Casting
-        num_cols = ['Popularity', 'danceability', 'energy', 'tempo', 'Artist_followers', 'duration_ms', 'loudness', 'valence']
-        for c in num_cols:
-            if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
-        # Step E: Feature Engineering
-        df['Year'] = pd.to_datetime(df['Release_date'], errors='coerce', format='mixed').dt.year
+        
+        # Numeric & Date Conversions
+        numeric_cols = ['Popularity', 'danceability', 'energy', 'tempo', 'duration_ms', 'Artist_followers', 'loudness', 'valence']
+        for col in numeric_cols:
+            if col in df.columns: df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        df['Release_date'] = pd.to_datetime(df['Release_date'], format='mixed', errors='coerce')
+        df['Year'] = df['Release_date'].dt.year
         df['duration_min'] = df['duration_ms'] / 60000
+        
         if 'Explicit' in df.columns:
-            df['Explicit_Label'] = df['Explicit'].astype(str).map({
-                'True': 'Explicit 🔞', 'False': 'Clean 🟢', 'true': 'Explicit 🔞', 'false': 'Clean 🟢'
-            }).fillna('Clean 🟢')
+            df['Explicit_Label'] = df['Explicit'].astype(str).map({'True': 'Explicit 🔞', 'False': 'Clean 🟢', 'true': 'Explicit 🔞', 'false': 'Clean 🟢'}).fillna('Clean 🟢')
+            
         return df.dropna(subset=['Year', 'Popularity', 'Genre', 'Artist', 'tempo'])
     except Exception as e:
-        st.error(f"Data Loading Error: {e}")
-        return None
+        st.error(f"❌ Error: {e}"); return None
 
 df = load_data()
 
-# --- 4. Sidebar Strategy Panel ---
+# --- 4. Sidebar & Filters ---
 if df is not None:
     with st.sidebar:
-        st.image("https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg", width=60)
-        st.title("Strategy Filters")
-        yr_range = st.slider("📅 Year Selection", int(df['Year'].min()), int(df['Year'].max()), (2010, 2024))
-        search_query = st.text_input("🔍 Artist Search", "")
-        
-        # Core Filtered Data (Global)
-        df_f = df[(df['Year'] >= yr_range[0]) & (df['Year'] <= yr_range[1])]
+        st.image("https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg", width=50)
+        st.title("Strategy Panel")
+        year_range = st.slider("📅 Year Range", int(df['Year'].min()), int(df['Year'].max()), (2010, 2024))
+        search_query = st.text_input("🔍 Search Artist", "")
+        df_filtered = df[(df['Year'] >= year_range[0]) & (df['Year'] <= year_range[1])]
         if search_query:
-            df_f = df_f[df_f['Artist'].str.contains(search_query, case=False, na=False)]
+            df_filtered = df_filtered[df_filtered['Artist'].str.contains(search_query, case=False, na=False)]
+        top_n = st.slider("🏆 Top Genres Depth", 3, 10, 4)
         
-        top_n_genres = st.slider("🏆 Genre Depth (Top N)", 3, 10, 4)
-        
-        st.markdown("---")
-        if not df_f.empty:
-            csv_data = df_f.to_csv(index=False).encode('utf-8-sig')
-            st.download_button("📥 Export Analysis (.csv)", csv_data, "spotify_report.csv", "text/csv")
+        if not df_filtered.empty:
+            csv = df_filtered.to_csv(index=False).encode('utf-8-sig')
+            st.download_button("📥 Export Current Data", csv, "report.csv", "text/csv")
         st.write("Presented by **Selina**")
 
-    # --- 5. Dashboard Header & KPIs ---
+    # --- 5. Main Content ---
     st.title("🎵 Spotify Intelligence Strategy Dashboard")
     
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    kpi1.metric("Tracks", f"{len(df_f):,}")
-    kpi2.metric("Avg Popularity", f"{df_f['Popularity'].mean():.1f}")
-    kpi3.metric("BPM Median", f"{df_f['tempo'].median():.0f}")
-    kpi4.metric("Market Leader", df_f['Genre'].mode()[0] if not df_f.empty else "N/A")
+    # KPI Row
+    m1, m2, m3, m4, m5 = st.columns(5)
+    m1.metric("Tracks", f"{len(df_filtered):,}")
+    m2.metric("Avg Pop", f"{df_filtered['Popularity'].mean():.1f}")
+    m3.metric("Superstars", f"{len(df_filtered[df_filtered['Artist_followers'] > 1000000]['Artist'].unique())}")
+    m4.metric("Avg Tempo", f"{df_filtered['tempo'].mean():.0f} BPM")
+    m5.metric("Top Genre", df_filtered['Genre'].mode()[0] if not df_filtered.empty else "N/A")
 
-    tabs = st.tabs(["📈 Market Insights", "🎛️ Audio Lab", "🌍 Global Reach"])
+    tab1, tab2, tab3 = st.tabs(["📈 Market Strategy", "🎛️ Audio Lab & AI", "🌍 Global Reach"])
 
-    # === TAB 1: MARKET INSIGHTS ===
-    with tabs[0]:
-        # 1. Market Evolution
-        section_header("1. Market Evolution: Trend Analysis")
-        y_avg = df_f.groupby('Year')['Popularity'].mean().reset_index()
-        m1, m2 = st.columns([1, 2])
-        m1.metric("Peak Year", int(y_avg.loc[y_avg['Popularity'].idxmax(), 'Year']))
-        m1.write("💡 **Insight:** Historical shifts in listener preferences and streaming adoption.")
-        fig1 = px.line(y_avg, x='Year', y='Popularity', markers=True)
-        fig1.update_traces(line=dict(color=SPOTIFY_BLACK, width=4), marker=dict(color=SPOTIFY_GREEN, size=10, line=dict(width=2, color='white')))
-        st.plotly_chart(apply_chart_style(fig1), width='stretch')
+    # === TAB 1: Market Strategy ===
+    with tab1:
+        # Q1: Market Trend
+        section_header("1. Market Trend Evolution")
+        yearly = df_filtered.groupby('Year')['Popularity'].mean().reset_index()
+        fig1 = px.line(yearly, x='Year', y='Popularity', markers=True, height=500)
+        fig1.update_traces(line=dict(color=SPOTIFY_BLACK, width=4), marker=dict(size=10, color=SPOTIFY_GREEN, line=dict(width=2, color="white")))
+        st.plotly_chart(apply_chart_style(fig1, "Global Popularity Evolution"), width='stretch')
 
-        # 2. Release Strategy
-        section_header("2. Release Strategy: Format Performance")
-        target_gs = df_f['Genre'].value_counts().head(top_n_genres).index
-        df_segment = df_f[df_f['Genre'].isin(target_gs)] # ✨ Variable df_segment defined here
-        fig2 = px.box(df_segment, x='Album/Single', y='Popularity', color='Album/Single', facet_col='Genre',
+        # Q2: Release Strategy
+        section_header("2. Single vs. Album Strategy")
+        target_gs = df_filtered['Genre'].value_counts().head(top_n).index
+        df_segment = df_filtered[df_filtered['Genre'].isin(target_gs)]
+        fig2 = px.box(df_segment, x='Album/Single', y='Popularity', color='Album/Single', 
+                     facet_col='Genre', facet_col_wrap=4, height=700, 
                      color_discrete_map={'single': SPOTIFY_GREEN, 'album': SPOTIFY_LIGHT_GREY},
                      category_orders={'Album/Single': ['single', 'album']})
         fig2.update_traces(boxmean=True)
         fig2.for_each_annotation(lambda a: a.update(text=f"<b>{a.text.split('=')[-1]}</b>"))
-        st.plotly_chart(apply_chart_style(fig2), width='stretch')
+        st.plotly_chart(apply_chart_style(fig2, "Format Strategy Performance"), width='stretch')
 
-        # 3. Content Strategy
+        # Q3: Content Strategy
         section_header("3. Content Strategy: Explicit vs. Clean")
-        st.write("💡 **Insight:** Assessing the commercial ceiling of explicit content across genres.")
         avg_exp = df_segment.groupby(['Genre', 'Explicit_Label'])['Popularity'].mean().reset_index()
-        fig3 = px.bar(avg_exp, x='Genre', y='Popularity', color='Explicit_Label', barmode='group',
-                     color_discrete_map={'Clean 🟢': SPOTIFY_GREEN, 'Explicit 🔞': SPOTIFY_BLACK})
-        st.plotly_chart(apply_chart_style(fig3), width='stretch')
+        fig3 = px.bar(avg_exp, x='Genre', y='Popularity', color='Explicit_Label', barmode='group', 
+                     color_discrete_map={'Clean 🟢': SPOTIFY_GREEN, 'Explicit 🔞': SPOTIFY_BLACK}, height=550)
+        st.plotly_chart(apply_chart_style(fig3, "Explicit vs. Clean Popularity Analysis"), width='stretch')
 
-        # 4. Superstar Effect
-        section_header("4. Superstar Effect: Network Leverage")
-        art_s = df_f.groupby('Artist').agg({'Artist_followers':'mean', 'Popularity':'max', 'Title':'count'}).reset_index()
+        # Q4: Superstar Effect (OLS Trendline & Corr)
+        section_header("4. The Superstar Effect: Correlation Analysis")
+        art_s = df_filtered.groupby('Artist').agg({'Artist_followers':'mean', 'Popularity':'max', 'Title':'count'}).reset_index()
         art_s = art_s[art_s['Title'] > 2]
         if not art_s.empty:
-            corr = art_s['Artist_followers'].corr(art_s['Popularity'])
-            st.info(f"📊 **Correlation Coefficient: {corr:.2f}** (Social Reach vs. Peak Popularity)")
+            corr_val = art_s['Artist_followers'].corr(art_s['Popularity'])
+            st.info(f"📊 **Correlation Coefficient: {corr_val:.2f}** (Followers vs. Peak Popularity)")
             fig4 = px.scatter(art_s, x='Artist_followers', y='Popularity', hover_name='Artist', log_x=True, 
-                             trendline="ols", trendline_color_override=TRENDLINE_RED, opacity=0.4)
-            fig4.update_traces(marker=dict(size=9, color=SPOTIFY_GREEN, line=dict(width=1, color='white')))
+                             trendline="ols", trendline_color_override=TRENDLINE_RED, opacity=0.5, height=650)
+            fig4.update_traces(marker=dict(size=8, color=SPOTIFY_GREEN, line=dict(width=1, color='white')))
             fig4.update_yaxes(range=[-5, 105])
-            st.plotly_chart(apply_chart_style(fig4), width='stretch')
+            st.plotly_chart(apply_chart_style(fig4, "Social Reach vs. Peak Popularity"), width='stretch')
 
-    # === TAB 2: AUDIO LAB ===
-    with tabs[1]:
-        # 5. Dark Horse Radar
+        # Q5: Dark Horse Radar (Quadrants & Definitions)
         section_header("5. Talent Scouting: Dark Horse Radar")
-        st.write("🎯 **Definition:** Followers < 50k & Popularity > 75 (High-impact independent artists)")
-        dark = df_f[(df_f['Artist_followers'] < 50000) & (df_f['Popularity'] > 75)].copy()
+        st.markdown("### 🕵️ What is a 'Dark Horse'? (Followers < 50k & Popularity > 75)")
+        dark = df_filtered[(df_filtered['Artist_followers'] < 50000) & (df_filtered['Popularity'] > 75)].copy()
         if not dark.empty:
-            fig5 = px.scatter(dark, x='energy', y='danceability', size='Popularity', color='Popularity',
-                             hover_name='Title', color_continuous_scale=['#A0E0A0', SPOTIFY_GREEN], height=700)
+            fig5 = px.scatter(dark, x='energy', y='danceability', size='Popularity', color='Popularity', 
+                             hover_name='Title', color_continuous_scale=['#A0E0A0', SPOTIFY_GREEN], height=750)
             fig5.add_vline(x=0.5, line_dash="dash", line_color="grey")
             fig5.add_hline(y=0.5, line_dash="dash", line_color="grey")
             fig5.add_annotation(x=0.9, y=0.9, text="🔥 Club", showarrow=False, font=dict(size=14, family="Arial Black"))
             fig5.add_annotation(x=0.1, y=0.1, text="🌙 Ballad", showarrow=False, font=dict(size=14, family="Arial Black"))
-            st.plotly_chart(apply_chart_style(fig5), width='stretch')
-        else:
-            st.info("No 'Dark Horse' artists found in this selection.")
+            
+            # Top 3 Highlights
+            top_h = dark.nlargest(3, 'Popularity')
+            for i, row in top_h.iterrows():
+                fig5.add_annotation(x=row['energy'], y=row['danceability'], text=f"<b>{row['Title'][:15]}</b>", 
+                                   showarrow=True, arrowhead=1, ax=0, ay=-40, font=dict(size=11), bgcolor="rgba(255,255,255,0.7)")
+            st.plotly_chart(apply_chart_style(fig5, "Dark Horse Quadrant Analysis"), width='stretch')
 
-        # 6. Tempo Analysis
-        section_header("6. Tempo Analysis: The BPM Sweet Spot")
-        fig6 = px.histogram(df_f, x='tempo', text_auto='.2s', color_discrete_sequence=[SPOTIFY_GREEN])
+    # === TAB 2: Audio Lab & AI ===
+    with tab2:
+        # Q6: Tempo Analysis (120 BPM High Annotation)
+        section_header("6. Tempo Analysis: The Sweet Spot")
+        def classify_tempo(bpm): return 'Slow (<100)' if bpm < 100 else 'Mainstream (100-140)' if bpm <= 140 else 'Fast (>140)'
+        df_filtered['Tempo_Zone'] = df_filtered['tempo'].apply(classify_tempo)
+        fig6 = px.histogram(df_filtered, x='tempo', color='Tempo_Zone', text_auto='.2s', height=650,
+                           color_discrete_map={'Slow (<100)': SPOTIFY_LIGHT_GREY, 'Mainstream (100-140)': SPOTIFY_GREEN, 'Fast (>140)': SPOTIFY_DARK_GREY},
+                           category_orders={'Tempo_Zone': ['Slow (<100)', 'Mainstream (100-140)', 'Fast (>140)']})
         fig6.update_traces(xbins=dict(start=0, end=250, size=10), textposition='outside')
         fig6.add_vline(x=120, line_dash="dash", line_color=SPOTIFY_BLACK, line_width=2)
-        fig6.add_annotation(x=120, y=1.08, yref="paper", text="Pop Standard (120 BPM)", showarrow=False, bgcolor="rgba(255,255,255,0.8)")
-        st.plotly_chart(apply_chart_style(fig6), width='stretch')
+        fig6.add_annotation(x=120, y=1.08, yref="paper", text="Pop Standard (120 BPM)", showarrow=False, 
+                            font=dict(size=14, family="Arial Black"), bgcolor="rgba(255,255,255,0.8)")
+        st.plotly_chart(apply_chart_style(fig6, "BPM Distribution Analysis"), width='stretch')
 
-        # 7. Decision Matrix
-        section_header("7. Decision Matrix: Feature Influence")
+        # Q7: AI Hit Potential Predictor
+        section_header("7. AI Hit Potential Predictor")
+        c_a1, c_a2 = st.columns([1, 2])
+        with c_a1:
+            id = st.slider("Danceability", 0.0, 1.0, 0.6); ie = st.slider("Energy", 0.0, 1.0, 0.7); il = st.slider("Loudness", -60, 0, -10); iv = st.slider("Valence", 0.0, 1.0, 0.5)
+            score = (id*30 + ie*25 + (il+60)/60*20 + iv*15 + 10)
+            st.metric("Predicted Hit Score", f"{score:.1f} / 100")
+        with c_a2:
+            radar = go.Figure(data=go.Scatterpolar(r=[id, ie, (il+60)/60, iv, id], theta=['Dance','Energy','Loud','Happy','Dance'], fill='toself', fillcolor='rgba(29, 185, 84, 0.4)', line=dict(color=SPOTIFY_GREEN)))
+            radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 1])), height=400)
+            st.plotly_chart(radar, width='stretch')
+
+        # Q8: Correlation Matrix
+        section_header("8. Feature Influence Matrix")
         corr_f = ['Popularity', 'danceability', 'energy', 'valence', 'tempo', 'duration_ms', 'loudness']
-        corr_matrix = df_f[corr_f].corr()
-        fig7 = px.imshow(corr_matrix, text_auto='.2f', color_continuous_scale=['#FFFFFF', '#C8E6C9', SPOTIFY_GREEN])
-        st.plotly_chart(apply_chart_style(fig7), width='stretch')
+        st.plotly_chart(apply_chart_style(px.imshow(df_filtered[corr_f].corr(), text_auto='.2f', color_continuous_scale=['#FFFFFF', '#C8E6C9', SPOTIFY_GREEN]), "Correlation Matrix"), width='stretch')
 
-    # === TAB 3: 全球版圖 ===
+    # === TAB 3: Global Reach ===
     with tab3:
-        section_header("Global Market Reach")
-        geo = df_filtered.groupby('Country').agg({
-            'Popularity': 'mean',
-            'Title': 'count'
-        }).reset_index()
-        
-        fig11 = px.choropleth(geo, 
-            locations="Country", 
-            locationmode='country names', 
-            color="Popularity",
-            hover_data=["Title"], # 加入歌曲數量資訊
-            color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106b31'],
-            projection="natural earth", # 使用更專業的投影
-            title="Global Music Popularity Heatmap"
-        )
-        
-        fig11.update_geos(
-            showcoastlines=True, coastlinecolor="LightGrey",
-            showland=True, landcolor="White",
-            showocean=True, oceancolor="LightBlue",
-            showlakes=True, lakecolor="LightBlue"
-        )
-
-
-
-
-
+        section_header("9. Global Market Reach")
+        geo = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
+        fig9 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106b31'], height=800)
+        st.plotly_chart(apply_chart_style(fig9, "Average Popularity by Territory"), width='stretch')
