@@ -290,7 +290,7 @@ if df is not None:
 
     # === TAB 3: Global Reach ===
     with tab3:
-        section_header("8. Global Market Reach")
+        section_header("Global Market Reach")
         
         # 1. 數據計算
         geo = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
@@ -356,3 +356,4 @@ if df is not None:
         # 5. 額外補充：Top 5 市場清單 (增加完整度)
         with st.expander("📊 View Top 10 Market Performance Table"):
             st.table(geo.sort_values(by='Popularity', ascending=False).head(10))
+
