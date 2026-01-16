@@ -144,11 +144,53 @@ if df is not None:
         st.plotly_chart(apply_chart_style(fig2, "Format Strategy Performance"), width='stretch')
 
         # 3. 內容分級策略
-        section_header("Content Strategy (Explicit Lyrics)")
+        # === Replace the Content Strategy section in your Tab 1 with this code ===
+
+        section_header("3. Content Strategy (Explicit Lyrics)")
+        
+        # --- 1. Strategic Insights (Professional English) ---
+        # Add high-level interpretations for stakeholders/professors
+        st.markdown("""
+        ### 🚫 Does Explicit Content Drive Popularity?
+        This analysis compares the average popularity of **Clean 🟢** vs. **Explicit 🔞** tracks across top genres to determine if lyric content impacts commercial success.
+        
+        * **The Genre Factor**: The impact of explicit lyrics is highly **genre-dependent**. While explicit versions show a slight advantage in genres like **Hip Hop** and **Latin**, 'Clean' tracks perform equally well or better in mainstream **Pop**.
+        * **Strategic Implication**: Explicit content is not a universal driver of popularity. The decision to use it should align with audience expectations within specific musical cultures rather than being a default strategy for attention.
+        ---
+        """)
+        
+        # --- 2. Data Preparation ---
+        # We use the 'df_segment' data which is already filtered to your Top N Genres in previous steps.
+        # Group by Genre and Label to find average popularity.
         avg_exp = df_segment.groupby(['Genre', 'Explicit_Label'])['Popularity'].mean().reset_index()
-        fig3 = px.bar(avg_exp, x='Genre', y='Popularity', color='Explicit_Label', barmode='group', 
-                     color_discrete_map={'Explicit 🔞': SPOTIFY_BLACK, 'Clean 🟢': SPOTIFY_GREEN}, height=550)
-        st.plotly_chart(apply_chart_style(fig3, "Explicit vs. Clean Popularity"), width='stretch')
+        
+        # --- 3. Plotting Logic (Spotify Theme & Grouped Bars) ---
+        fig3 = px.bar(avg_exp, 
+                     x='Genre', 
+                     y='Popularity', 
+                     color='Explicit_Label', 
+                     barmode='group',  # ✨ Crucial: Places bars side-by-side for comparison
+                     # Map colors to match the Spotify aesthetic in your image
+                     color_discrete_map={'Clean 🟢': SPOTIFY_GREEN, 'Explicit 🔞': SPOTIFY_BLACK},
+                     height=600)
+        
+        # --- 4. Chart Optimization (English & Layout) ---
+        fig3.update_layout(
+            xaxis_title="", # Remove unnecessary axis label
+            yaxis_title="Average Popularity Score",
+            legend_title="Content Rating",
+            # Move legend to the top for a cleaner look
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
+        )
+        
+        # Apply the standard 2026 styling wrapper and render
+        st.plotly_chart(apply_chart_style(fig3, "Explicit vs. Clean Popularity by Genre"), width='stretch')
 
         # 4. 巨星效應 (統計強化版)
         section_header("4. Market Power: The Superstar Effect")
@@ -340,6 +382,7 @@ if df is not None:
         geo = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
         fig11 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106b31'], height=800)
         st.plotly_chart(apply_chart_style(fig11, "Territory Performance Heatmap"), width='stretch')
+
 
 
 
