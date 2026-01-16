@@ -246,7 +246,7 @@ if df is not None:
         
         # 3. 優化動畫細節
         fig_anim.update_layout(
-            margin={"t": 30, "b": 0},
+            margin={"t": 20, "b": 0},
             # 讓播放速度變快一點 (500ms 一幀)
             sliders=[{"currentvalue": {"prefix": "Year: "}}]
         )
@@ -265,6 +265,7 @@ if df is not None:
                 Notice if genres are migrating towards the <b>Top-Right (The Hit Zone)</b> over time.
             </div>
         """, unsafe_allow_html=True)
+        
         # --- Q6: Audio Feature Diversity (散佈圖) ---
         section_header("Audio Feature Diversity: Market Exploration")
         
@@ -399,6 +400,7 @@ if df is not None:
         )
         
         st.plotly_chart(fig10, width='stretch')
+
 
 
 
