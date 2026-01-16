@@ -172,4 +172,59 @@ if df is not None:
 
         # Q9. 黑馬雷達
         section_header("5. Talent Scouting: Dark Horse Radar")
-        dark = df_filtered[(df_filtered['Artist_followers'] < 50000) & (
+        dark = df_filtered[(df_filtered['Artist_followers'] < 50000) & (df_filtered['Popularity'] > 75)].copy()
+        if not dark.empty:
+            fig5 = px.scatter(dark, x='energy', y='danceability', size='Popularity', color='Popularity', 
+                             hover_name='Title', color_continuous_scale=['#F0FFF0', SPOTIFY_GREEN], height=750)
+            fig5.add_vline(x=0.5, line_dash="dash"); fig5.add_hline(y=0.5, line_dash="dash")
+            fig5 = apply_chart_style(fig5, "Emerging Artist Analysis")
+            st.plotly_chart(fig5, width='stretch')
+
+    # === TAB 2: 音樂實驗室 & AI (題目 6-9) ===
+    with tab2:
+        # 🔮 AI 預測功能
+        section_header("6. AI Hit Potential Predictor")
+        st.write("調整參數以預測歌曲熱度潛力指標。")
+        ca1, ca2 = st.columns([1, 2])
+        with ca1:
+            id = st.slider("Danceability", 0.0, 1.0, 0.6)
+            ie = st.slider("Energy", 0.0, 1.0, 0.7)
+            il = st.slider("Loudness", -60, 0, -10)
+            iv = st.slider("Valence", 0.0, 1.0, 0.5)
+            pred = (id*30 + ie*25 + (il+60)/60*20 + iv*10 + 15)
+            st.metric("Predicted Hit Score", f"{pred:.1f} / 100")
+        with ca2:
+            radar = go.Figure(data=go.Scatterpolar(r=[id, ie, (il+60)/60, iv, id], theta=['Dance','Energy','Loudness','Valence','Dance'], fill='toself', fillcolor='rgba(29, 185, 84, 0.4)', line=dict(color=SPOTIFY_GREEN)))
+            radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 1])), height=400)
+            st.plotly_chart(radar, width='stretch')
+
+        # Q5. BPM 分析
+        section_header("7. Tempo Analysis (BPM)")
+        fig6 = px.histogram(df_filtered, x='tempo', text_auto='.2s', height=600)
+        fig6.update_traces(xbins=dict(size=5), marker_color=SPOTIFY_GREEN, textposition='outside')
+        fig6 = apply_chart_style(fig6, "Tempo Distribution (Jupyter Style)")
+        st.plotly_chart(fig6, width='stretch')
+
+        # Q7. 歌曲時長趨勢
+        section_header("8. Duration Economics")
+        dur = df_filtered.groupby('Year')['duration_min'].mean().reset_index()
+        fig7 = px.line(dur, x='Year', y='duration_min', markers=True, height=500)
+        fig7 = apply_chart_style(fig7, "Are Songs Getting Shorter?")
+        st.plotly_chart(fig7, width='stretch')
+
+        # Q10. 相關性矩陣
+        section_header("9. Audio Feature Correlation Matrix")
+        corr = df_filtered[['Popularity', 'danceability', 'energy', 'valence', 'tempo', 'loudness']].corr()
+        fig8 = px.imshow(corr, text_auto='.2f', color_continuous_scale=['#FFFFFF', '#C8E6C9', SPOTIFY_GREEN], height=600)
+        fig8 = apply_chart_style(fig8, "Which Features Drive Success?")
+        st.plotly_chart(fig8, width='stretch')
+
+    # === TAB 3: 全球版圖 (題目 10) ===
+    with tab3:
+        section_header("10. Global Market Reach")
+        geo = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
+        fig10 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", 
+                             color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106b31'], height=800)
+        fig10.update_layout(geo=dict(showframe=False, projection_type='natural earth'))
+        fig10 = apply_chart_style(fig10, "Average Popularity by Territory")
+        st.plotly_chart(fig10, width='stretch')
