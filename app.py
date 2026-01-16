@@ -108,26 +108,43 @@ if df is not None:
 
     # === TAB 1: Market Strategy ===
     with tab1:
-        # 1. Market Evolution
-        section_header("1. Market Trend Evolution")
+        # 1. Market Evolution: Trend Analysis
+        section_header("Market Trend Evolution")
+        
+        # 數據計算
         yearly = df_filtered.groupby('Year')['Popularity'].mean().reset_index()
-        m1, m2 = st.columns([1, 3])
-        m1.metric("Peak Popularity Year", int(yearly.loc[yearly['Popularity'].idxmax(), 'Year']))
-        m1.write("💡 **Insight:** Analysis of market volatility and streaming adoption.")
+        peak_yr = int(yearly.loc[yearly['Popularity'].idxmax(), 'Year'])
+        avg_pop = yearly['Popularity'].mean()
+
+        m1, m2, m3 = st.columns([1, 1, 2])
+        m1.metric("Peak Year", peak_yr)
+        m2.metric("Market Avg", f"{avg_pop:.1f}")
+        # 使用 markdown 並微調位置讓文字與指標對齊
+        m3.markdown(f"<div style='padding-top:25px;'>💡 <b>Insight:</b> Analysis of market volatility and streaming adoption.</div>", unsafe_allow_html=True)
+
+        # 繪圖
         fig1 = px.line(yearly, x='Year', y='Popularity', markers=True, height=500)
-        fig1.update_traces(line=dict(color=SPOTIFY_BLACK, width=4), marker=dict(size=12, color=SPOTIFY_GREEN, line=dict(width=2, color='white')))
+        fig1.update_traces(
+            line=dict(color=SPOTIFY_BLACK, width=4), 
+            marker=dict(size=12, color=SPOTIFY_GREEN, line=dict(width=2, color='white'))
+        )
         st.plotly_chart(apply_chart_style(fig1, "Global Popularity Evolution"), width='stretch')
 
         # 2. Release Strategy
-        section_header("2. Single vs. Album Strategy")
+        section_header("Single vs. Album Strategy")
         target_gs = df_filtered['Genre'].value_counts().head(top_n).index
         df_segment = df_filtered[df_filtered['Genre'].isin(target_gs)]
-        fig2 = px.box(df_segment, x='Album/Single', y='Popularity', color='Album/Single', facet_col='Genre', facet_col_wrap=4,
+    
+        fig2 = px.box(df_segment, x='Album/Single', y='Popularity', color='Album/Single', 
+                     facet_col='Genre', facet_col_wrap=4, 
+                     height=900,  # 增加總高度
+                     facet_row_spacing=0.1, # 增加行與行之間的間距
                      color_discrete_map={'single': SPOTIFY_GREEN, 'album': SPOTIFY_LIGHT_GREY},
                      category_orders={'Album/Single': ['single', 'album']})
+        
         fig2.update_traces(boxmean=True)
         fig2.for_each_annotation(lambda a: a.update(text=f"<b>{a.text.split('=')[-1]}</b>"))
-        st.plotly_chart(apply_chart_style(fig2, "Format Performance by Top Genres"), width='stretch')
+        st.plotly_chart(apply_chart_style(fig2, "Format Strategy Performance"), width='stretch')
 
         # 3. Content Strategy
         section_header("3. Content Strategy: Explicit vs. Clean")
@@ -242,3 +259,4 @@ if df is not None:
         fig10 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106B31'], height=800)
         fig10.update_layout(geo=dict(showframe=False, projection_type='natural earth'))
         st.plotly_chart(apply_chart_style(fig10, "Global Popularity Map"), width='stretch')
+
