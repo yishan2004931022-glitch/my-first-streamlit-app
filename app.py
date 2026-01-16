@@ -109,7 +109,7 @@ if df is not None:
     # === TAB 1: Market Strategy ===
     with tab1:
         # --- Q1: Market Evolution ---
-        section_header("1. Market Trend Evolution")
+        section_header("Market Trend Evolution")
         yearly = df_filtered.groupby('Year')['Popularity'].mean().reset_index()
         
         # ✨ 優化 1：Insight 往左移、變成一行不換行
@@ -145,7 +145,7 @@ if df is not None:
         st.plotly_chart(apply_chart_style(fig2, "Format Strategy Performance"), width='stretch')
 
         # 3. Content Strategy
-        section_header("3. Content Strategy: Explicit vs. Clean")
+        section_header("Content Strategy: Explicit vs. Clean")
         st.markdown("💡 **Insight:** Assessing the commercial performance of lyrics rating.")
         avg_exp = df_segment.groupby(['Genre', 'Explicit_Label'])['Popularity'].mean().reset_index()
         fig3 = px.bar(avg_exp, x='Genre', y='Popularity', color='Explicit_Label', barmode='group',
@@ -153,7 +153,7 @@ if df is not None:
         st.plotly_chart(apply_chart_style(fig3, "Content Rating vs. Popularity"), width='stretch')
 
         # 4. Superstar Effect
-        section_header("4. The Superstar Effect: Correlation Analysis")
+        section_header("The Superstar Effect: Correlation Analysis")
         art_s = df_filtered.groupby('Artist').agg({'Artist_followers':'mean', 'Popularity':'max', 'Title':'count'}).reset_index()
         art_s = art_s[art_s['Title'] > 2]
         if not art_s.empty:
@@ -166,7 +166,7 @@ if df is not None:
             st.plotly_chart(apply_chart_style(fig4, "Social Leverage vs. Market Ceiling"), width='stretch')
 
         # 5. Dark Horse Radar (Integrated your specific code)
-        section_header("5. Talent Scouting: Dark Horse Radar")
+        section_header("Talent Scouting: Dark Horse Radar")
         st.markdown("""
         ### 🕵️ What is a "Dark Horse" Artist?
         Tracks with **'Low Cost, High Impact'** potential:
@@ -178,11 +178,11 @@ if df is not None:
         if not dark_horses.empty:
             col_info1, col_info2 = st.columns(2)
             with col_info1:
-                st.info("**🔥 Club (Top-Right)**: High energy & danceability. Perfect for parties.")
-                st.info("**🍷 Groove (Top-Left)**: Low energy but high danceability. Ideal for chill vibes.")
+                st.info("**🔥Club (Top-Right)**: High energy & danceability. Perfect for parties.")
+                st.info("**🍷Groove (Top-Left)**: Low energy but high danceability. Ideal for chill vibes.")
             with col_info2:
-                st.info("**⚡ Power (Bottom-Right)**: High energy but low danceability. Typical for Rock.")
-                st.info("**🌙 Ballad (Bottom-Left)**: Low energy and danceability. Emotional and slow.")
+                st.info("**⚡Power (Bottom-Right)**: High energy but low danceability. Typical for Rock.")
+                st.info("**🌙Ballad (Bottom-Left)**: Low energy and danceability. Emotional and slow.")
 
             fig9 = px.scatter(dark_horses, x='energy', y='danceability', size='Popularity', color='Popularity',     
                              hover_name='Title', hover_data=['Artist', 'Artist_followers'],
@@ -191,10 +191,10 @@ if df is not None:
             fig9.add_vline(x=0.5, line_width=1, line_dash="dash", line_color="grey")
             fig9.add_hline(y=0.5, line_width=1, line_dash="dash", line_color="grey")
 
-            fig9.add_annotation(x=0.9, y=0.9, text="<b>🔥 Club</b>", showarrow=False, font=dict(size=14))
-            fig9.add_annotation(x=0.1, y=0.9, text="<b>🍷 Groove</b>", showarrow=False, font=dict(size=14))
-            fig9.add_annotation(x=0.9, y=0.1, text="<b>⚡ Power</b>", showarrow=False, font=dict(size=14))
-            fig9.add_annotation(x=0.1, y=0.1, text="<b>🌙 Ballad</b>", showarrow=False, font=dict(size=14))
+            fig9.add_annotation(x=0.9, y=0.9, text="<b>🔥Club</b>", showarrow=False, font=dict(size=14))
+            fig9.add_annotation(x=0.1, y=0.9, text="<b>🍷Groove</b>", showarrow=False, font=dict(size=14))
+            fig9.add_annotation(x=0.9, y=0.1, text="<b>⚡Power</b>", showarrow=False, font=dict(size=14))
+            fig9.add_annotation(x=0.1, y=0.1, text="<b>🌙Ballad</b>", showarrow=False, font=dict(size=14))
 
             top_h = dark_horses.nlargest(3, 'Popularity')
             for i, row in top_h.iterrows():
@@ -210,15 +210,45 @@ if df is not None:
 
     # === TAB 2: Audio Lab & AI ===
     with tab2:
-        # 6. Audio Distribution (Sampled)
-        section_header("6. Audio Feature Distribution (Sampled)")
+        # 6. Audio Distribution 
+        section_header("6. Audio Feature Strategy: Energy vs. Danceability")
+        
+        # --- 1. 策略洞察 (Strategic Insight) ---
+        st.markdown("""
+        ### 💡 The "Hit Formula" Insight
+        This chart reveals the **'Sweet Spot'** for commercial success. Tracks that balance **High Energy** (> 0.6) with **High Danceability** (> 0.6) tend to cluster in the higher popularity brackets (darker green points). This is a key indicator for producers aiming for playlist placement.
+        ---
+        """)
+        
+        # --- 2. 數據抽樣 ---
+        # 為了避免圖表過於擁擠，我們隨機抽取 2000 筆資料進行展示
         df_sample = df_filtered.sample(n=min(2000, len(df_filtered)), random_state=42)
-        fig_s = px.scatter(df_sample, x='energy', y='danceability', color='Popularity', color_continuous_scale=['#F0F0F0', SPOTIFY_GREEN], opacity=0.6, height=700)
-        fig_s.update_traces(marker=dict(size=8, line=dict(width=1, color='DarkSlateGrey')))
-        st.plotly_chart(apply_chart_style(fig_s, "Energy vs. Danceability Distribution"), width='stretch')
+        
+        # --- 3. 繪圖邏輯 (Spotify 風格) ---
+        fig_scatter = px.scatter(df_sample, 
+                                 x='energy', 
+                                 y='danceability', 
+                                 color='Popularity', 
+                                 # 使用從淺灰到 Spotify 綠的漸層，與其他圖表一致
+                                 color_continuous_scale=['#F0F0F0', SPOTIFY_GREEN], 
+                                 opacity=0.6, 
+                                 height=700)
+        
+        # 設定標記樣式 (Spotify 綠色填充 + 白色邊框)
+        fig_scatter.update_traces(marker=dict(size=8, line=dict(width=1, color='white')))
+        
+        # --- 4. 佈局優化 ---
+        fig_scatter.update_layout(
+            xaxis_title="Energy Score",
+            yaxis_title="Danceability Score",
+            coloraxis_colorbar_title="Popularity Score"
+        )
+        
+        # 使用自定義的 apply_chart_style 函數保持風格統一
+        st.plotly_chart(apply_chart_style(fig_scatter, "Feature Distribution: The 'Sweet Spot' Analysis"), width='stretch')
 
         # 7. Hit Song DNA
-        section_header("7. Hit Song DNA: The Sweet Spot")
+        section_header("Hit Song DNA: The Sweet Spot")
         hit_songs = df_filtered[df_filtered['Popularity'] > 80]
         if not hit_songs.empty:
             fig7 = px.density_contour(hit_songs, x='energy', y='danceability', nbinsx=20, nbinsy=20, height=700)
@@ -226,7 +256,7 @@ if df is not None:
             st.plotly_chart(apply_chart_style(fig7, "Concentration of High-Impact Tracks"), width='stretch')
 
         # 8. Tempo Analysis (The 120BPM logic you optimized)
-        section_header("8. Tempo Analysis: The Sweet Spot")
+        section_header("Tempo Analysis: The Sweet Spot")
         def classify_tempo(bpm): return 'Slow (<100)' if bpm < 100 else 'Mainstream (100-140)' if bpm <= 140 else 'Fast (>140)'
         df_filtered['Tempo_Zone'] = df_filtered['tempo'].apply(classify_tempo)
         fig8 = px.histogram(df_filtered, x='tempo', color='Tempo_Zone', text_auto='.2s', height=650,
@@ -239,7 +269,7 @@ if df is not None:
         st.plotly_chart(apply_chart_style(fig8, "Tempo Distribution Strategy"), width='stretch')
 
         # 9. AI Prediction (Radar)
-        section_header("9. AI Hit Potential Predictor")
+        section_header("AI Hit Potential Predictor")
         ca1, ca2 = st.columns([1, 2])
         with ca1:
             id = st.slider("Danceability", 0.0, 1.0, 0.6); ie = st.slider("Energy", 0.0, 1.0, 0.7); il = st.slider("Loudness", -60, 0, -10); iv = st.slider("Valence", 0.0, 1.0, 0.5)
@@ -252,10 +282,11 @@ if df is not None:
 
     # === TAB 3: Global Reach ===
     with tab3:
-        section_header("10. Global Market Reach")
+        section_header("Global Market Reach")
         geo = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
         fig10 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106B31'], height=800)
         fig10.update_layout(geo=dict(showframe=False, projection_type='natural earth'))
         st.plotly_chart(apply_chart_style(fig10, "Global Popularity Map"), width='stretch')
+
 
 
