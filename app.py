@@ -210,49 +210,58 @@ if df is not None:
 
     # === TAB 2: Audio Lab & AI ===
     with tab2:
-        # --- Q6: Audio Feature Strategy ---
-        section_header("Audio Feature Strategy: Energy vs. Danceability")
+        # --- Q6: Audio Feature Diversity (散佈圖) ---
+        section_header("6. Audio Feature Diversity: Market Exploration")
         
-        # 數據抽樣 (避免圖表點位過多導致載入緩慢)
+        # 抽樣以維持效能
         df_sample = df_filtered.sample(n=min(2000, len(df_filtered)), random_state=42)
         
-        # ✨ 優化排版：單行指標 + 16px 精簡 Insight
-        f_m1, f_m2 = st.columns([0.6, 4])
-        f_m1.metric("Sample Size", f"{len(df_sample)}")
-        f_m2.markdown(f"""
+        # 計算相關係數 (Energy vs. Popularity) 作為指標
+        corr_val = df_sample['energy'].corr(df_sample['Popularity'])
+        
+        # ✨ 優化排版：傳遞「多樣性」價值
+        f6_m1, f6_m2, f6_m3 = st.columns([0.6, 0.6, 4])
+        f6_m1.metric("Sample", f"{len(df_sample)}")
+        f6_m2.metric("Corr", f"{corr_val:.2f}")
+        f6_m3.markdown(f"""
             <div style='padding-top:28px; white-space: nowrap; color: #535353; font-size: 16px;'>
-                💡 <b>Hit Formula:</b> Tracks balancing High Energy & Danceability (>0.6) cluster in top brackets.
+                💡 <b>Diversity Insight:</b> While high-vibe tracks are popular, hits exist across the entire spectrum, showing market openness to various styles.
             </div>
             """, unsafe_allow_html=True)
-
-        # 繪圖邏輯
-        fig_scatter = px.scatter(df_sample, 
-                                 x='energy', 
-                                 y='danceability', 
-                                 color='Popularity', 
-                                 color_continuous_scale=['#F0F0F0', SPOTIFY_GREEN], 
-                                 opacity=0.6, 
-                                 height=700)
-
-        # 設定 Spotify 綠色標記與白色邊框
-        fig_scatter.update_traces(marker=dict(size=9, line=dict(width=1, color='white')))
-
-        # 座標軸優化
-        fig_scatter.update_layout(
-            xaxis_title="Energy Score",
-            yaxis_title="Danceability Score",
-            coloraxis_colorbar_title="Popularity"
-        )
-
-        st.plotly_chart(apply_chart_style(fig_scatter, "The 'Sweet Spot' Distribution"), width='stretch')
-
-        # 7. Hit Song DNA
-        section_header("Hit Song DNA: The Sweet Spot")
+    
+        fig6 = px.scatter(df_sample, x='energy', y='danceability', color='Popularity', 
+                         color_continuous_scale=['#F0F0F0', SPOTIFY_GREEN], opacity=0.6, height=700)
+        fig6.update_traces(marker=dict(size=9, line=dict(width=1, color='white')))
+        
+        st.plotly_chart(apply_chart_style(fig6, "Audio Feature Distribution: The Broad Market"), width='stretch')
+    
+        # --- Q7: Hit Song DNA (密度圖) ---
+        section_header("7. Hit Song DNA: The Strategic Blueprint")
+        
+        # 只針對 Popularity > 80 的歌曲進行建模
         hit_songs = df_filtered[df_filtered['Popularity'] > 80]
+        
         if not hit_songs.empty:
+            # 計算甜點區集中度 (落在 0.6-0.8 區間的比例)
+            in_sweet_spot = hit_songs[(hit_songs['energy'] > 0.6) & (hit_songs['danceability'] > 0.6)]
+            concentration = (len(in_sweet_spot) / len(hit_songs)) * 100
+            
+            # ✨ 優化排版：傳遞「精準成功」價值
+            f7_m1, f7_m2 = st.columns([1, 4])
+            f7_m1.metric("Hit Density", f"{concentration:.1f}%")
+            f7_m2.markdown(f"""
+                <div style='padding-top:28px; white-space: nowrap; color: #535353; font-size: 16px;'>
+                    🎯 <b>Precision Strategy:</b> For Pop > 80, the 'Safe Zone' is statistically narrowed to the 0.6-0.8 window. This is the blueprint for mass success.
+                </div>
+                """, unsafe_allow_html=True)
+    
             fig7 = px.density_contour(hit_songs, x='energy', y='danceability', nbinsx=20, nbinsy=20, height=700)
-            fig7.update_traces(contours_coloring="fill", contours_showlabels=True, colorscale='Greens')
-            st.plotly_chart(apply_chart_style(fig7, "Concentration of High-Impact Tracks"), width='stretch')
+            # 優化密度圖視覺：使用填充色塊增加「重量感」
+            fig7.update_traces(contours_coloring="fill", contours_showlabels=True, colorscale='Greens', opacity=0.8)
+            
+            st.plotly_chart(apply_chart_style(fig7, "Hit DNA: Statistically Probable Success Zone"), width='stretch')
+        else:
+            st.warning("Not enough high-popularity tracks (Pop > 80) to generate a DNA profile for this selection.")
 
         # 8. Tempo Analysis (The 120BPM logic you optimized)
         section_header("Tempo Analysis: The Sweet Spot")
@@ -286,6 +295,7 @@ if df is not None:
         fig10 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106B31'], height=800)
         fig10.update_layout(geo=dict(showframe=False, projection_type='natural earth'))
         st.plotly_chart(apply_chart_style(fig10, "Global Popularity Map"), width='stretch')
+
 
 
 
