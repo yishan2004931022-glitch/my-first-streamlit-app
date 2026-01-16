@@ -125,7 +125,7 @@ if df is not None:
             """, unsafe_allow_html=True)
         
         fig1 = px.line(yearly, x='Year', y='Popularity', markers=True, height=500)
-        fig1.update_traces(line=dict(color=SPOTIFY_BLACK, width=4), marker=dict(size=12, color=SPOTIFY_GREEN, line=dict(width=2, color='white')))
+        fig1.update_traces(line=dict(color=SPOTIFY_BLACK, width=3), marker=dict(size=8, color=SPOTIFY_GREEN, line=dict(width=2, color='white')))
         st.plotly_chart(apply_chart_style(fig1, "Global Popularity Evolution"), width='stretch')
 
         # 2. Release Strategy
@@ -344,4 +344,5 @@ if df is not None:
         )
         
         st.plotly_chart(fig10, width='stretch')
+
 
