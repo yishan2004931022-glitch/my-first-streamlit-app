@@ -290,11 +290,66 @@ if df is not None:
 
     # === TAB 3: Global Reach ===
     with tab3:
-        section_header("Global Market Reach")
+        section_header("8. Global Market Reach")
+        
+        # 1. 數據準備
         geo = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
-        fig10 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106B31'], height=800)
-        fig10.update_layout(geo=dict(showframe=False, projection_type='natural earth'))
-        st.plotly_chart(apply_chart_style(fig10, "Global Popularity Map"), width='stretch')
+        
+        # 找出表現最好的國家
+        if not geo.empty:
+            top_country_row = geo.loc[geo['Popularity'].idxmax()]
+            top_country_name = top_country_row['Country']
+            top_country_pop = top_country_row['Popularity']
+        else:
+            top_country_name = "N/A"
+            top_country_pop = 0
+
+        # 2. 策略洞察與指標 (單行排版)
+        g_m1, g_m2, g_m3 = st.columns([0.8, 0.8, 3])
+        g_m1.metric("Top Market", top_country_name)
+        g_m2.metric("Market Avg Pop", f"{top_country_pop:.1f}")
+        g_m3.markdown(f"""
+            <div style='padding-top:28px; white-space: nowrap; color: #535353; font-size: 16px;'>
+                💡 <b>Global Insight:</b> North America & Western Europe remain dominant strongholds for high-popularity content.
+            </div>
+            """, unsafe_allow_html=True)
+
+        # 3. 繪圖邏輯
+        fig10 = px.choropleth(
+            geo, 
+            locations="Country", 
+            locationmode='country names', 
+            color="Popularity",
+            hover_name="Country", # 滑鼠懸停時優先顯示國家名
+            # 使用更鮮明的 Spotify 綠色漸層 (淺灰 -> Spotify綠 -> 深綠)
+            color_continuous_scale=['#E0E0E0', SPOTIFY_GREEN, '#0D4F24'], 
+            height=750 # 調整高度
+        )
+
+        # 4. 關鍵優化：地圖美化與邊距消除
+        fig10.update_layout(
+            # 設定地圖樣式
+            geo=dict(
+                showframe=False,        # 移除外框
+                showcoastlines=False,   # 移除海岸線雜訊，看起來更乾淨
+                projection_type='natural earth',
+                showocean=True, oceancolor='#F4F4F8', # 加入淺灰色海洋背景
+                showland=True, landcolor='white',     # 沒有數據的陸地設為白色
+                bgcolor='rgba(0,0,0,0)' # 背景透明
+            ),
+            # ✨ 關鍵：極端壓縮邊距 (Top/Bottom/Left/Right)，消除標題與圖之間的空白
+            margin={"r":0,"t":30,"l":0,"b":0},
+            
+            # 優化顏色條標題
+            coloraxis_colorbar=dict(title="Avg Popularity"),
+            
+            # 設定字體與背景 (不使用 apply_chart_style，因為地圖需要特殊的 margin 設定)
+            template="simple_white",
+            font=dict(family="Arial", size=12),
+            hoverlabel=dict(bgcolor="white", font_size=13)
+        )
+        
+        st.plotly_chart(fig10, width='stretch')
 
 
 
