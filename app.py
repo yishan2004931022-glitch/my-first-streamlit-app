@@ -125,11 +125,50 @@ if df is not None:
     # === TAB 1: 市場策略 (1-5 題) ===
     with tab1:
         # 1. 市場趨勢
-        section_header("Market Trend Evolution")
-        yearly = df_filtered.groupby('Year')['Popularity'].mean().reset_index()
-        fig1 = px.line(yearly, x='Year', y='Popularity', markers=True, height=500)
-        fig1.update_traces(line=dict(color=SPOTIFY_BLACK, width=4), marker=dict(size=10, color=SPOTIFY_GREEN))
-        st.plotly_chart(apply_chart_style(fig1, "Global Popularity Evolution"), width='stretch')
+        section_header("1. Market Strategy: Trend Evolution")
+        
+        # --- 1. 數據計算 ---
+        yearly_avg = df_filtered.groupby('Year')['Popularity'].mean().reset_index()
+        
+        # 找出巔峰年份與平均值
+        peak_row = yearly_avg.loc[yearly_avg['Popularity'].idxmax()]
+        overall_avg = yearly_avg['Popularity'].mean()
+        
+        # --- 2. 關鍵指標列 (放在圖表上方，提供即時洞察) ---
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            st.metric("Peak Popularity Year", f"{int(peak_row['Year'])}", 
+                      help="The year with the highest average popularity across all genres.")
+        with col_m2:
+            st.metric("Overall Market Avg", f"{overall_avg:.1f}")
+        with col_m3:
+            st.write("💡 **Insight:** Analysis of market volatility and the impact of global streaming adoption.")
+        
+        # --- 3. 繪圖邏輯 (Spotify 極簡風) ---
+        fig1 = px.line(yearly_avg, 
+                      x='Year', 
+                      y='Popularity', 
+                      markers=True, 
+                      height=500)
+        
+        # 設定線條與點的顏色 (Spotify Black & Green)
+        fig1.update_traces(
+            line=dict(color=SPOTIFY_BLACK, width=4), 
+            marker=dict(size=12, color=SPOTIFY_GREEN, line=dict(width=2, color='white')),
+            hovertemplate="<b>Year: %{x}</b><br>Avg Popularity: %{y:.2f}<extra></extra>"
+        )
+        
+        # --- 4. 座標軸優化 ---
+        fig1.update_layout(
+            xaxis_title="Release Year",
+            yaxis_title="Average Popularity Score",
+            template="simple_white",
+            hovermode="x unified",
+            margin=dict(t=30, b=40)
+        )
+        
+        # 使用 2026 最新語法顯示圖表
+        st.plotly_chart(fig1, width='stretch')'stretch')
 
         # 2. 發行策略 (箱型圖 + 平均值虛線)
         section_header("Single vs. Album Strategy")
@@ -341,6 +380,7 @@ if df is not None:
         geo = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
         fig11 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106b31'], height=800)
         st.plotly_chart(apply_chart_style(fig11, "Territory Performance Heatmap"), width='stretch')
+
 
 
 
