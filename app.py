@@ -210,59 +210,66 @@ if df is not None:
 
     # === TAB 2: Audio Lab & AI ===
     with tab2:
-        import plotly.express as px
-
-        # --- 動畫泡泡圖區塊 ---
-        section_header("Special Feature: The Great Genre Migration")
+        # --- 動畫泡泡圖區塊 (Top 10 Focus) ---
+        section_header("Special Feature: Top 10 Genres Migration")
         
-        # 1. 數據預處理：按年份與流派分組，計算平均值
-        # 這樣做能確保動畫流暢，且不會因為資料量太大而卡頓
-        df_anim = df_filtered.groupby(['Year', 'Genre']).agg({
+        # 1. 🔍 關鍵步驟：篩選出 Top 10 流派
+        # 計算選定時間範圍內，每個流派的「平均受歡迎程度」，並取出前 10 名的清單
+        top_genres_list = df_filtered.groupby('Genre')['Popularity'].mean().nlargest(10).index.tolist()
+        
+        # 使用這個清單過濾原始資料，只保留 Top 10 流派的數據
+        df_top10_raw = df_filtered[df_filtered['Genre'].isin(top_genres_list)].copy()
+        
+        # 2. 數據聚合：按年份與流派分組 (針對 Top 10)
+        df_anim = df_top10_raw.groupby(['Year', 'Genre']).agg({
             'energy': 'mean',
             'danceability': 'mean',
             'Popularity': 'mean',
-            'Title': 'count'  # 氣泡大小可以用歌曲數量
+            'Title': 'count'  # 氣泡大小用歌曲數量
         }).reset_index()
         
         # 確保年份排序正確
         df_anim = df_anim.sort_values('Year')
         
-        # 2. 建立動畫散佈圖
+        # 3. 建立動畫散佈圖
         fig_anim = px.scatter(
             df_anim, 
             x="energy", 
             y="danceability", 
-            animation_frame="Year",    # ✨ 核心：隨年份播放
-            animation_group="Genre",   # ✨ 核心：追蹤同一個流派的移動
-            size="Popularity",         # 氣泡大小代表受歡迎程度
-            color="Genre",             # 不同流派不同顏色
-            hover_name="Genre", 
-            size_max=50,               # 限制氣泡最大尺寸
-            # ⚠️ 重要：必須固定坐標軸範圍，否則動畫播放時軸會亂跳
-            range_x=[df_anim['energy'].min()*0.8, df_anim['energy'].max()*1.2],
-            range_y=[df_anim['danceability'].min()*0.8, df_anim['danceability'].max()*1.2],
-            height=700
+            animation_frame="Year",    # 隨年份播放
+            animation_group="Genre",   # 追蹤流派移動
+            size="Title",              # ✨ 改用「發行量」作為氣泡大小，更能看出誰是市場主流
+            color="Genre",             # 顏色現在只會有 10 種，清晰很多
+            hover_name="Genre",
+            hover_data={'energy':':.2f', 'danceability':':.2f', 'Popularity':':.1f', 'Title': True},
+            size_max=60,               # 調整最大氣泡尺寸
+            # 固定坐標軸範圍 (根據 Top 10 的數據範圍動態計算)
+            range_x=[df_anim['energy'].min()*0.85, df_anim['energy'].max()*1.1],
+            range_y=[df_anim['danceability'].min()*0.85, df_anim['danceability'].max()*1.1],
+            height=700,
+            # 使用較鮮明的配色方案
+            color_discrete_sequence=px.colors.qualitative.Bold
         )
         
-        # 3. 優化動畫細節
+        # 4. 優化動畫細節與佈局
         fig_anim.update_layout(
-            margin={"t": 20, "b": 0},
-            # 讓播放速度變快一點 (500ms 一幀)
-            sliders=[{"currentvalue": {"prefix": "Year: "}}]
+            margin={"t": 30, "b": 0},
+            sliders=[{"currentvalue": {"prefix": "Year: "}}], # 顯示當前年份
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, title="") # 將圖例移到上方，節省空間
         )
         
-        # 移除動畫中的網格線，使其更簡潔
+        # 移除網格線
         fig_anim.update_xaxes(showgrid=False)
         fig_anim.update_yaxes(showgrid=False)
         
         # 顯示圖表
-        st.plotly_chart(apply_chart_style(fig_anim, "Evolution of Musical DNA (2010-2024)"), width='stretch')
+        st.plotly_chart(apply_chart_style(fig_anim, f"Evolution of the Top 10 Market Leaders ({yr[0]}-{yr[1]})"), width='stretch')
         
-        # 加入一段專屬動畫的 Insight
+        # 更新 Insight
         st.markdown(f"""
             <div style='color: #535353; font-size: 16px; margin-top: -20px;'>
-                💡 <b>How to Read:</b> Press the 'Play' button to see how musical genres have evolved over a decade. 
-                Notice if genres are migrating towards the <b>Top-Right (The Hit Zone)</b> over time.
+                💡 <b>Focus Insight:</b> Filtering for the <b>Top 10 dominant genres</b> removes noise. 
+                Press play to observe how market leaders compete for the "High-Energy" sweet spot over time.
             </div>
         """, unsafe_allow_html=True)
         
@@ -400,6 +407,7 @@ if df is not None:
         )
         
         st.plotly_chart(fig10, width='stretch')
+
 
 
 
