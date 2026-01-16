@@ -211,7 +211,7 @@ if df is not None:
     # === TAB 2: Audio Lab & AI ===
     with tab2:
         # --- Q6: Audio Feature Diversity (散佈圖) ---
-        section_header("6. Audio Feature Diversity: Market Exploration")
+        section_header("Audio Feature Diversity: Market Exploration")
         
         # 抽樣以維持效能
         df_sample = df_filtered.sample(n=min(2000, len(df_filtered)), random_state=42)
@@ -236,7 +236,7 @@ if df is not None:
         st.plotly_chart(apply_chart_style(fig6, "Audio Feature Distribution: The Broad Market"), width='stretch')
     
         # --- Q7: Hit Song DNA (密度圖) ---
-        section_header("7. Hit Song DNA: The Strategic Blueprint")
+        section_header("Hit Song DNA: The Strategic Blueprint")
         
         # 只針對 Popularity > 80 的歌曲進行建模
         hit_songs = df_filtered[df_filtered['Popularity'] > 80]
@@ -295,6 +295,7 @@ if df is not None:
         fig10 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106B31'], height=800)
         fig10.update_layout(geo=dict(showframe=False, projection_type='natural earth'))
         st.plotly_chart(apply_chart_style(fig10, "Global Popularity Map"), width='stretch')
+
 
 
 
