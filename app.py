@@ -295,7 +295,7 @@ if df is not None:
         # 1. 數據計算
         geo = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
         
-        # 找出表現最好的國家 (指標置頂)
+        # 找出表現最好的市場
         if not geo.empty:
             top_country = geo.loc[geo['Popularity'].idxmax()]
             top_name = top_country['Country']
@@ -303,43 +303,56 @@ if df is not None:
         else:
             top_name, top_val = "N/A", 0
 
-        # 2. 緊湊的指標與 Insight (單行排列)
-        m1, m2, m3 = st.columns([1, 1, 3])
-        m1.metric("Top Market", top_name)
-        m2.metric("Peak Avg Pop", f"{top_val:.1f}")
-        # 透過 CSS padding-top 讓文字與指標對齊，並強制不換行
-        m3.markdown(f"""
+        # 2. ✨ 優化排版：消除空白，單行指標與 Insight
+        # 比例分配 [0.7, 0.7, 4] 讓文字往左推，減少空隙
+        g1, g2, g3 = st.columns([0.7, 0.7, 4])
+        g1.metric("Top Market", top_name)
+        g2.metric("Market Pop", f"{top_val:.1f}")
+        # 16px 精簡 Insight，確保不換行
+        g3.markdown(f"""
             <div style='padding-top:28px; white-space: nowrap; color: #535353; font-size: 16px;'>
-                💡 <b>Global Insight:</b> High-popularity hotspots are concentrated in North America and Northern Europe (Norway leads at {top_val:.1f}).
+                💡 <b>Global Insight:</b> High-consumption clusters identified in Northern Europe & North America. 
+                Top performing region: <b>{top_name}</b>.
             </div>
             """, unsafe_allow_html=True)
 
-        # 3. 繪圖邏輯：優化地圖視覺
+        # 3. ✨ 地圖視覺優化
         fig10 = px.choropleth(
             geo, 
             locations="Country", 
             locationmode='country names', 
             color="Popularity",
-            hover_name="Country", # 滑鼠移上去顯示國家名稱
-            color_continuous_scale=['#F0FDF4', SPOTIFY_GREEN, '#14532D'], # 更細膩的綠色漸層
+            hover_name="Country", # 滑鼠移上去顯示國家名
+            hover_data={"Country": False, "Popularity": ":.2f"}, # 格式化顯示
+            color_continuous_scale=['#F0FDF4', SPOTIFY_GREEN, '#14532D'], 
             height=700
         )
 
-        # 4. 關鍵優化：消除標題與圖中間的空隙，並美化地圖
+        # 4. ✨ 關鍵：極致縮減間距與地圖精化
         fig10.update_layout(
-            # ✨ 核心修正：將頂部邊距設為 0，並調整左右邊距
-            margin={"r":0, "t":10, "l":0, "b":0},
+            # 將頂部邊距設為 0，徹底解決標題與圖中間空太多的問題
+            margin={"r":0, "t":0, "l":0, "b":0},
             
             geo=dict(
-                showframe=False,        # 移除醜醜的外框
-                showcoastlines=False,   # 移除雜亂海岸線，讓色塊更乾淨
-                projection_type='natural earth', # 使用更具質感的球體投影
-                showocean=True, oceancolor='#F8FAFC', # 加入淺灰色海洋，襯托陸地
-                showland=True, landcolor='#FFFFFF',   # 無數據陸地設為白色
+                showframe=False,        # 移除外框
+                showcoastlines=False,   # 移除雜亂海岸線
+                projection_type='natural earth', # 質感球體投影
+                showocean=True, oceancolor='#F8FAFC', # 淺灰色海洋增加層次
+                showland=True, landcolor='#FFFFFF',   # 沒數據的陸地為白色
+                lakecolor='#F8FAFC'      # 湖泊顏色同步海洋
             ),
-            # 隱藏顏色條的預設標題，改用簡潔的呈現
-            coloraxis_colorbar=dict(title="Popularity", thickness=15, len=0.6)
+            # 優化顏色條 (Color Bar)
+            coloraxis_colorbar=dict(
+                title="Avg Popularity",
+                thickness=15,
+                len=0.5,
+                y=0.5,
+                ticks="outside"
+            )
         )
         
-        # 使用 2026 版寬度適應語法
         st.plotly_chart(fig10, width='stretch')
+        
+        # 5. 額外補充：Top 5 市場清單 (增加完整度)
+        with st.expander("📊 View Top 10 Market Performance Table"):
+            st.table(geo.sort_values(by='Popularity', ascending=False).head(10))
