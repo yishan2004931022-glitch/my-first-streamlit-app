@@ -210,6 +210,61 @@ if df is not None:
 
     # === TAB 2: Audio Lab & AI ===
     with tab2:
+        import plotly.express as px
+
+        # --- 動畫泡泡圖區塊 ---
+        section_header("Special Feature: The Great Genre Migration")
+        
+        # 1. 數據預處理：按年份與流派分組，計算平均值
+        # 這樣做能確保動畫流暢，且不會因為資料量太大而卡頓
+        df_anim = df_filtered.groupby(['Year', 'Genre']).agg({
+            'energy': 'mean',
+            'danceability': 'mean',
+            'Popularity': 'mean',
+            'Title': 'count'  # 氣泡大小可以用歌曲數量
+        }).reset_index()
+        
+        # 確保年份排序正確
+        df_anim = df_anim.sort_values('Year')
+        
+        # 2. 建立動畫散佈圖
+        fig_anim = px.scatter(
+            df_anim, 
+            x="energy", 
+            y="danceability", 
+            animation_frame="Year",    # ✨ 核心：隨年份播放
+            animation_group="Genre",   # ✨ 核心：追蹤同一個流派的移動
+            size="Popularity",         # 氣泡大小代表受歡迎程度
+            color="Genre",             # 不同流派不同顏色
+            hover_name="Genre", 
+            size_max=50,               # 限制氣泡最大尺寸
+            # ⚠️ 重要：必須固定坐標軸範圍，否則動畫播放時軸會亂跳
+            range_x=[df_anim['energy'].min()*0.8, df_anim['energy'].max()*1.2],
+            range_y=[df_anim['danceability'].min()*0.8, df_anim['danceability'].max()*1.2],
+            height=700
+        )
+        
+        # 3. 優化動畫細節
+        fig_anim.update_layout(
+            margin={"t": 30, "b": 0},
+            # 讓播放速度變快一點 (500ms 一幀)
+            sliders=[{"currentvalue": {"prefix": "Year: "}}]
+        )
+        
+        # 移除動畫中的網格線，使其更簡潔
+        fig_anim.update_xaxes(showgrid=False)
+        fig_anim.update_yaxes(showgrid=False)
+        
+        # 顯示圖表
+        st.plotly_chart(apply_chart_style(fig_anim, "Evolution of Musical DNA (2010-2024)"), width='stretch')
+        
+        # 加入一段專屬動畫的 Insight
+        st.markdown(f"""
+            <div style='color: #535353; font-size: 16px; margin-top: -20px;'>
+                💡 <b>How to Read:</b> Press the 'Play' button to see how musical genres have evolved over a decade. 
+                Notice if genres are migrating towards the <b>Top-Right (The Hit Zone)</b> over time.
+            </div>
+        """, unsafe_allow_html=True)
         # --- Q6: Audio Feature Diversity (散佈圖) ---
         section_header("Audio Feature Diversity: Market Exploration")
         
@@ -344,5 +399,6 @@ if df is not None:
         )
         
         st.plotly_chart(fig10, width='stretch')
+
 
 
