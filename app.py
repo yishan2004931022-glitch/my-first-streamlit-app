@@ -151,17 +151,76 @@ if df is not None:
         st.plotly_chart(apply_chart_style(fig3, "Explicit vs. Clean Popularity"), width='stretch')
 
         # 4. 巨星效應 (統計強化版)
-        section_header("The Superstar Effect: Peak Analysis")
-        art_s = df_filtered.groupby('Artist').agg({'Artist_followers': 'mean', 'Popularity': 'max', 'Title': 'count'}).reset_index()
-        art_s = art_s[art_s['Title'] > 2]
-        if len(art_s) > 2:
-            corr_val = art_s['Artist_followers'].corr(art_s['Popularity'])
-            fig4 = px.scatter(art_s, x='Artist_followers', y='Popularity', hover_name='Artist', log_x=True, 
-                             trendline="ols", trendline_color_override=TRENDLINE_RED, opacity=0.5, height=650)
-            fig4.update_yaxes(range=[-5, 105])
-            fig4.add_annotation(xref="paper", yref="paper", x=0.05, y=0.9, text=f"<b>Correlation: {corr_val:.2f}</b>", 
-                               showarrow=False, font=dict(size=18), bgcolor="white", bordercolor=SPOTIFY_BLACK, borderwidth=1)
-            st.plotly_chart(apply_chart_style(fig4, "Superstar Effect: Followers vs. Peak Popularity"), width='stretch')
+        # === Replace the Superstar Effect section in your Tab 1 with this code ===
+
+        section_header("The Superstar Effect: Strategic Peak Analysis")
+        
+        # --- 1. Strategic Insights (Professional English) ---
+        st.markdown("""
+        ### 📊 Understanding the "Follower-Hit" Correlation
+        This analysis examines the relationship between an artist's **Social Reach** (Followers) and their **Market Ceiling** (Peak Popularity). 
+        
+        * **Social Leverage**: Does a massive fan base guarantee a chart-topping hit?
+        * **The Viral Paradox**: Notice how tracks from artists with fewer followers can still reach the 80-100 popularity bracket—this represents the power of **Algorithm-driven Virality** over traditional fan-base loyalty.
+        * **Correlation Interpretation**: A low correlation coefficient (e.g., < 0.3) suggests that while followers provide a "safety net" for streams, **Content Quality** and **Trends** are the true drivers of peak popularity.
+        ---
+        """)
+        
+        # --- 2. Data Preparation ---
+        # Aggregate to find the "Peak" performance of each artist
+        artist_stats = df_filtered.groupby('Artist').agg({
+            'Artist_followers': 'mean',
+            'Popularity': 'max',      # We look at their best-performing track
+            'Title': 'count'
+        }).reset_index()
+        
+        # Filter out artists with insufficient data (e.g., less than 3 tracks)
+        artist_stats = artist_stats[artist_stats['Title'] > 2]
+        
+        if len(artist_stats) > 2:
+            # Calculate Correlation Coefficient
+            corr_value = artist_stats['Artist_followers'].corr(artist_stats['Popularity'])
+            
+            # --- 3. Plotting Logic (Spotify Theme) ---
+            fig4 = px.scatter(artist_stats, 
+                             x='Artist_followers', 
+                             y='Popularity', 
+                             hover_name='Artist',
+                             log_x=True,               # Log scale is essential for follower distribution
+                             trendline="ols", 
+                             trendline_color_override=SPOTIFY_BLACK, # Sleek black trendline
+                             opacity=0.6,
+                             height=650)
+            
+            # Style the markers with Spotify Green
+            fig4.update_traces(marker=dict(
+                size=8, 
+                color=SPOTIFY_GREEN, 
+                line=dict(width=1, color='white')
+            ))
+        
+            # --- 4. Annotation & Axis Optimization ---
+            # Correlation Label in a professional box
+            fig4.add_annotation(
+                xref="paper", yref="paper", 
+                x=0.05, y=0.95,
+                text=f"<b>Correlation Coefficient: {corr_value:.2f}</b>", 
+                showarrow=False, 
+                font=dict(size=16, color=SPOTIFY_BLACK), 
+                bgcolor="rgba(255, 255, 255, 0.9)",
+                bordercolor=SPOTIFY_GREEN,
+                borderwidth=2,
+                borderpad=4
+            )
+            
+            # Range and Label styling
+            fig4.update_yaxes(range=[0, 105], title="Peak Popularity Score")
+            fig4.update_xaxes(title="Artist Followers (Log Scale)")
+            
+            st.plotly_chart(apply_chart_style(fig4, "Social Reach vs. Market Performance"), width='stretch')
+            
+        else:
+            st.warning("Insufficient data to perform correlation analysis.")
 
         # 5. 黑馬雷達 (象限分析)
         # === Replace the Dark Horse section in your Tab 1 with this code ===
@@ -294,5 +353,6 @@ if df is not None:
         geo = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
         fig11 = px.choropleth(geo, locations="Country", locationmode='country names', color="Popularity", color_continuous_scale=['#F5F5F5', SPOTIFY_GREEN, '#106b31'], height=800)
         st.plotly_chart(apply_chart_style(fig11, "Territory Performance Heatmap"), width='stretch')
+
 
 
