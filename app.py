@@ -347,7 +347,7 @@ if df is not None:
             
     # === TAB 3: Global Reach ===
     with tab3:
-        section_header("8. Global Market Reach")
+        section_header("Global Market Reach")
         # 1. 數據計算
         geo = df_filtered.groupby('Country')['Popularity'].mean().reset_index()
 
@@ -401,6 +401,7 @@ if df is not None:
         )
 
         st.plotly_chart(fig10, width='stretch')
+
 
 
 
