@@ -11,7 +11,6 @@ st.set_page_config(
     page_icon="🎧",
     layout="wide",
     initial_sidebar_state="expanded"
-
 )
 # --- 2. Professional Visual Constants ---
 SPOTIFY_GREEN = "#1DB954"
@@ -23,267 +22,134 @@ TRENDLINE_RED = "#FF4B4B"
 # UI Helper: Section Headers
 def section_header(text):
     st.markdown(f"""
-
         <div style='border-left: 10px solid {SPOTIFY_GREEN}; padding-left: 20px; margin-top: 50px; margin-bottom: 10px;'>
-
             <h2 style='color: #333333; font-size: 30px; font-weight: 800; font-family: "Arial Black"; margin: 0;'>
-
             {text}
-
             </h2>
-
         </div>
-
         """, unsafe_allow_html=True)
 
 # UI Helper: Standard Plotly Styling (2026 Version)
-
 def apply_chart_style(fig, title_text):
-
     fig.update_layout(
-
         template="simple_white",
-
         title=dict(
-
             text=f"<b>{title_text}</b>",
-
             font=dict(color=SPOTIFY_GREEN, size=22, family="Arial Black"),
-
             x=0, y=0.98
-
         ),
-
         font=dict(family="Arial", size=14, color="black"),
-
         margin=dict(t=120, b=50, l=50, r=50)
-
     )
 
     return fig
 
-
-
 # --- 3. Data Engine (Full Cleaning Step A-E) ---
-
 @st.cache_data
-
 def load_data():
-
     all_files = os.listdir('.')
-
     target = 'Final database.csv.gz' if 'Final database.csv.gz' in all_files else 'Final database.zip'
-
     try:
-
         df = pd.read_csv(target, low_memory=False)
-
         # [Step A] Popularity 0-100 only
-
         df = df[(df['Popularity'] >= 0) & (df['Popularity'] <= 100)].copy()
-
         # [Step B] Filter Album/Single
-
         df = df[df['Album/Single'].isin(['single', 'album'])]
-
         # [Step C] Exclude junk genres
-
         mask_junk = df['Genre'].astype(str).str.lower().isin(['n-a', 'unknown', 'world-music', 'nan'])
-
         df = df[~mask_junk]
-
         # [Step D] Capitalize Genres
-
         df['Genre'] = df['Genre'].astype(str).str.title().replace({'K-Pop': 'K-Pop'})
-
         # Numeric Conversions
-
         num_cols = ['Popularity', 'danceability', 'energy', 'tempo', 'Artist_followers', 'duration_ms', 'loudness', 'valence']
-
         for c in num_cols:
-
             if c in df.columns: df[c] = pd.to_numeric(df[c], errors='coerce')
-
         # Date & Year
-
         df['Release_date'] = pd.to_datetime(df['Release_date'], format='mixed', errors='coerce')
-
         df['Year'] = df['Release_date'].dt.year
-
         df['duration_min'] = df['duration_ms'] / 60000
-
         if 'Explicit' in df.columns:
-
             df['Explicit_Label'] = df['Explicit'].astype(str).map({'True': 'Explicit 🔞', 'False': 'Clean 🟢', 'true': 'Explicit 🔞', 'false': 'Clean 🟢'}).fillna('Clean 🟢')
-
         return df.dropna(subset=['Year', 'Popularity', 'Genre', 'Artist', 'tempo'])
-
     except: return None
-
-
 
 df = load_data()
 
-
-
 # --- 4. Sidebar Strategy Filters ---
-
 if df is not None:
-
     with st.sidebar:
-
         st.image("https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg", width=50)
-
         st.title("Strategy Panel")
-
-        year_range = st.slider("📅 Year Selection", int(df['Year'].min()), int(df['Year'].max()), (2010, 2024))
-
+        yr = st.slider("📅 Year Selection", int(df['Year'].min()), int(df['Year'].max()), (2010, 2024))
         search_query = st.text_input("🔍 Search Artist Name", "")
 
-        
-
         # --- KEY: Define df_filtered here to avoid NameError ---
-
-        df_filtered = df[(df['Year'] >= year_range[0]) & (df['Year'] <= year_range[1])]
-
+        df_filtered = df[(df['Year'] >= yr[0]) & (df['Year'] <= yr[1])]
         if search_query:
-
             df_filtered = df_filtered[df_filtered['Artist'].str.contains(search_query, case=False, na=False)]
-
-        
-
         top_n = st.slider("🏆 Top Genres Count", 3, 10, 4)
-
         if not df_filtered.empty:
-
             csv = df_filtered.to_csv(index=False).encode('utf-8-sig')
-
             st.download_button("📥 Export Current Data", csv, "spotify_report.csv", "text/csv")
-
         st.write("Presented by **Selina**")
 
-
-
     # --- 5. Main Dashboard KPIs ---
-
     st.title("🎵 Spotify Intelligence Strategy Dashboard")
-
-    
-
     k1, k2, k3, k4, k5 = st.columns(5)
-
     k1.metric("Tracks", f"{len(df_filtered):,}")
-
     k2.metric("Avg Pop", f"{df_filtered['Popularity'].mean():.1f}")
-
     k3.metric("Superstars", f"{len(df_filtered[df_filtered['Artist_followers'] > 1000000]['Artist'].unique())}")
-
     k4.metric("Avg Tempo", f"{df_filtered['tempo'].mean():.0f}")
-
     k5.metric("Top Genre", df_filtered['Genre'].mode()[0] if not df_filtered.empty else "N/A")
-
-
 
     tab1, tab2, tab3 = st.tabs(["📈 Market Strategy", "🎛️ Audio Lab & AI", "🌍 Global Reach"])
 
-
-
     # === TAB 1: Market Strategy ===
-
     with tab1:
-
         # --- Q1: Market Evolution ---
-
         section_header("Market Trend Evolution")
-
         yearly = df_filtered.groupby('Year')['Popularity'].mean().reset_index()
 
-        
-
-        # ✨ 優化 1：Insight 往左移、變成一行不換行
-
+        # 優化 1：Insight 往左移、變成一行不換行
         # 使用不對稱比例 [0.6, 0.6, 4] 讓前兩個指標佔比小，把第三欄 Insight 往左推
 
         m1, m2, m3 = st.columns([0.6, 0.6, 4]) 
-
         m1.metric("Peak Year", int(yearly.loc[yearly['Popularity'].idxmax(), 'Year']))
-
         m2.metric("Market Avg", f"{yearly['Popularity'].mean():.1f}")
-
         # white-space: nowrap 確保絕對不換行
-
         m3.markdown(f"""
-
             <div style='padding-top:28px; white-space: nowrap; color: #535353; font-size: 18px;'>
-
                 💡 <b>Insight:</b> Analysis of market volatility and streaming adoption trends.
-
             </div>
-
             """, unsafe_allow_html=True)
-
-        
-
         fig1 = px.line(yearly, x='Year', y='Popularity', markers=True, height=500)
-
         fig1.update_traces(line=dict(color=SPOTIFY_BLACK, width=3), marker=dict(size=8, color=SPOTIFY_GREEN, line=dict(width=2, color='white')))
-
         st.plotly_chart(apply_chart_style(fig1, "Global Popularity Evolution"), width='stretch')
 
-
-
         # 2. Release Strategy
-
         section_header("Single vs. Album Strategy")
-
         target_gs = df_filtered['Genre'].value_counts().head(top_n).index
-
         df_segment = df_filtered[df_filtered['Genre'].isin(target_gs)]
-
-    
-
         fig2 = px.box(df_segment, x='Album/Single', y='Popularity', color='Album/Single', 
-
                      facet_col='Genre', facet_col_wrap=4, 
-
                      height=900,  # 增加總高度
-
                      facet_row_spacing=0.1, # 增加行與行之間的間距
-
                      color_discrete_map={'single': SPOTIFY_GREEN, 'album': SPOTIFY_LIGHT_GREY},
-
                      category_orders={'Album/Single': ['single', 'album']})
-
-        
-
         fig2.update_traces(boxmean=True)
-
         fig2.for_each_annotation(lambda a: a.update(text=f"<b>{a.text.split('=')[-1]}</b>"))
-
         st.plotly_chart(apply_chart_style(fig2, "Format Strategy Performance"), width='stretch')
 
-
-
         # 3. Content Strategy
-
         section_header("Content Strategy: Explicit vs. Clean")
-
         st.markdown("💡 **Insight:** Assessing the commercial performance of lyrics rating.")
-
         avg_exp = df_segment.groupby(['Genre', 'Explicit_Label'])['Popularity'].mean().reset_index()
-
         fig3 = px.bar(avg_exp, x='Genre', y='Popularity', color='Explicit_Label', barmode='group',
-
                      color_discrete_map={'Clean 🟢': SPOTIFY_GREEN, 'Explicit 🔞': SPOTIFY_BLACK})
-
         st.plotly_chart(apply_chart_style(fig3, "Content Rating vs. Popularity"), width='stretch')
 
-
-
         # 4. Superstar Effect
-
         section_header("The Superstar Effect: Correlation Analysis")
-
         art_s = df_filtered.groupby('Artist').agg({'Artist_followers':'mean', 'Popularity':'max', 'Title':'count'}).reset_index()
 
         art_s = art_s[art_s['Title'] > 2]
@@ -789,6 +655,7 @@ if df is not None:
         
 
         st.plotly_chart(fig10, width='stretch')
+
 
 
 
